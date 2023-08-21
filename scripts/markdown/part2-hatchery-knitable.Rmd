@@ -1,0 +1,76 @@
+---
+title: "part2-hatchery-knitable"
+author: "South Coast StA"
+date: 'Last update: `r format(Sys.time(), sep="_", "%Y-%m-%d %H:%M")`'
+output: html_document
+params:
+    password:
+      label: "Enter computer password"
+      value: ""
+      input: password
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F, warning=F, message=F)
+
+#library(here)
+library(tidyverse)
+library(readxl)
+library(kableExtra)
+library(bookdown)
+
+"%notin%" <- Negate("%in%")
+
+#source("C:/Users/DAVIDSONKA/Documents/ANALYSIS/San_Juan/san_juan_CN/scripts/functions/getExtractorData.R", local = knitr::knit_global())
+#source("C:/Users/DAVIDSONKA/Documents/ANALYSIS/San_Juan/san_juan_CN/scripts/functions/getMrpPadsData.R", local = knitr::knit_global())
+#source("C:/Users/DAVIDSONKA/Documents/ANALYSIS/San_Juan/san_juan_CN/scripts/functions/getNusedsData.R", local = knitr::knit_global())
+
+
+# ============================== RELEASES ==============================
+
+
+
+# ============================== MARK HISTORY ==============================
+
+```
+
+<br>
+
+## **Overview** 
+
+
+
+<br>
+
+<br>
+
+## **Hatchery marking**
+
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

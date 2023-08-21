@@ -1,0 +1,60 @@
+---
+title: "part5-enviro-knitable"
+author: "South Coast StA"
+date: 'Last update: `r format(Sys.time(), sep="_", "%Y-%m-%d %H:%M")`'
+output: html_document
+params:
+    password:
+      label: "Enter computer password"
+      value: ""
+      input: password
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F, warning=F, message=F)
+
+#library(here)
+library(tidyverse)
+library(readxl)
+library(kableExtra)
+library(bookdown)
+library(here)
+
+"%notin%" <- Negate("%in%")
+
+
+# Load data ---------------------
+# Nitinat hydromet
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

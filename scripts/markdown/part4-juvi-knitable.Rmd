@@ -1,0 +1,41 @@
+---
+title: "part4-juvi-knitable"
+author: "South Coast StA"
+date: 'Last update: `r format(Sys.time(), sep="_", "%Y-%m-%d %H:%M")`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=F, echo=F, message=F)
+
+# Load libraries ------------------------------------
+library(tidyverse)
+library(readxl)
+library(kableExtra)
+library(bookdown)
+
+
+
+# Load data ------------------------------------
+
+
+
+```
+
+
+
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
