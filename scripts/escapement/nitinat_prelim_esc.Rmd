@@ -1,0 +1,259 @@
+---
+title: "Nitinat escapement 2023 (PRELIM)"
+author: "South Coast StA"
+date: "Last update: `r Sys.Date()`"
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    toc_collapsed: false 
+    toc_depth: 5
+    number_sections: true
+knit: (function(inputFile, encoding) { 
+  rmarkdown::render(inputFile, encoding=encoding, output_file=paste0(substr(inputFile,1,nchar(inputFile)-4), "_PRELIMINARY_", format(Sys.Date(), sep="_", "%Y-%m-%d"), '.html')) 
+  }
+  )
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=F, warning=F, message=F)
+
+# Load libraries ----------------------------
+library(tidyverse)
+library(readxl)
+library(here)
+library(ggpubr)
+library(kableExtra)
+
+
+# ============================= Load data ============================
+
+# SILS ----------------------------
+nit.sil <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_2023.xlsx", sheet="Nitinat River raw SIL entry", guess_max=20000)
+
+auc23 <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_2023.xlsx", sheet="AUC_R", guess_max=20000)
+
+tribs.sil <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Tribs/A22_Tributaries_2023.xlsx", sheet="Tributaries Raw SIL entry", guess_max=20000)
+
+
+# Hatchery ----------------------------
+nrh.cn <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Adult_Management - Nitinat CN 2023.xlsx", sheet="Adult Management", guess_max=20000, skip=1)
+
+
+# Enviro ----------------------------
+nit.water <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/NitinatWaterLevelHydrometDataNov-16-2023 15-47.xlsx", sheet="Exported Data", guess_max=20000) %>% 
+  mutate(gauge_m = case_when(grepl("Estimated", `Staff Gauge(mH20)`) ~ NA,
+                             TRUE ~ as.numeric(`Staff Gauge(mH20)`)),
+         sensor_depth = case_when(grepl("Estimated", `Sensor Depth(mH20)`) ~ NA,
+                             TRUE ~ as.numeric(`Sensor Depth(mH20)`)),
+         date = as.Date(Time)) %>% 
+  filter(date<= as.Date("2023-11-08"))
+
+```
+
+<br>
+
+<br>
+
+
+# **Chinook**
+
+Six snorkel surveys and one helicopter survey were conducted for Chinook in 2023. 
+
+<br>
+
+## Counts & environmentals
+
+```{r }
+ggplot() +
+  geom_ribbon(data=nit.water %>% group_by(date) %>% summarize(min=min(gauge_m), max=max(gauge_m)), 
+              aes(x=as.Date(date), ymin=min*5000, ymax=max*5000), fill="dodger blue", alpha=0.5) +
+  geom_line(data=nit.water %>% group_by(date) %>% summarize(mean = mean(gauge_m)), 
+            aes(x=as.Date(date), y=mean*5000), colour="dodger blue") +
+  geom_bar(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
+             summarize(n=sum(`adults live / habitat seen (# Est Live)`)), 
+           aes(x=as.Date(date), y=n, group=type, fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
+           stat="identity", position="stack", alpha=0.7) +
+  geom_line(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date) %>% 
+              summarize(n=sum(`adults dead`)), 
+            aes(x=as.Date(date), y=n), 
+            stat="identity", position="stack") +
+  labs(x="", y="Expanded adult Chinook") +
+  scale_y_continuous(sec.axis = sec_axis(~./5000, name="Staff gauge (m)")) +
+  scale_x_date(date_breaks="7 day", date_labels="%b %d") +
+  labs(x="", Y="Live chinook", fill="Segment", colour="Segment") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+```
+
+Figure: Chinook counts (expanded adults) and water levels (blue line) 
+
+<br>
+
+<br>
+
+## Behaviour & carcasses
+
+```{r}
+ggarrange(
+  ggplot() +
+    geom_bar(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
+               summarize(n=sum(`adults live / habitat seen (# Est Live)`)), 
+             aes(x=as.Date(date), y=n, fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
+             stat="identity", position="stack", alpha=0.7) +
+    geom_point(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date) %>% 
+                 summarize(n=sum(`adults dead`)), 
+               aes(x=as.Date(date), y=n*10), size=2, alpha=0.5) +
+    geom_line(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date) %>% 
+                summarize(n=sum(`adults dead`)), 
+              aes(x=as.Date(date), y=n*10), 
+              stat="identity", position="stack") +
+    scale_y_continuous(sec.axis = sec_axis(~./10, name="Carcasses")) +
+    scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
+    labs(x="", y="Expanded live adult Chinook", fill="Segment", colour="Segment") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1)),
+  
+  ggplot() +
+    geom_bar(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
+               summarize(Spawning=sum(`adults # spawning`),
+                         Holding = sum(`adults # holding`)) %>% pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
+             aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
+             stat="identity", position="stack", alpha=0.7, size=1) +
+    geom_point(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date) %>% 
+                 summarize(n=sum(`adults dead`)), 
+               aes(x=as.Date(date), y=n*10), size=2, alpha=0.5) +
+    geom_line(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date) %>% 
+                summarize(n=sum(`adults dead`)), 
+              aes(x=as.Date(date), y=n*10), 
+              stat="identity", position="stack") +
+    scale_y_continuous(sec.axis = sec_axis(~./10, name="Carcasses")) +
+    scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
+    scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
+    labs(x="", y="Spawning adult Chinook", fill="Behaviour", colour="Segment") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1)),
+  
+  nrow=2 
+)
+```
+<br>
+
+Figure: Top: Expanded live Chinook (bars) and carcasses (black line). Bottom: Spawning (gray bars) and holding (white bars) adult Chinook and carcasses (black line). 
+
+<br>
+
+<br>
+
+## Snorkel & swim-in counts
+
+```{r}
+ggarrange(
+  ggplot() +
+    geom_bar(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
+               summarize(n=sum(`adults live / habitat seen (# Est Live)`)), 
+             aes(x=as.Date(date), y=n, group=type, fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
+             stat="identity", position="stack", alpha=0.7) + 
+    geom_bar(data=nrh.cn %>% filter(`Parent Activity Type`=="Adult Capture", grepl("Swim Ins", `Inventory Lot`)) %>% 
+               group_by(`Activity Start Date`) %>% summarize(n=sum(`Total Count`)),
+             aes(x=as.Date(`Activity Start Date`), y=n*1), fill="black", stat="identity", alpha=0.7) +
+    scale_y_continuous(sec.axis = sec_axis(~./1, name="Swim ins")) +
+    scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
+    labs(x="", y="Expanded adult Chinook", fill="Segment", colour="Segment") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1)),
+  
+  ggplot() +
+    geom_bar(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
+               summarize(Spawning=sum(`adults # spawning`),
+                         Holding = sum(`adults # holding`)) %>% pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
+             aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
+             stat="identity", position="stack", alpha=0.7, size=1) +
+    geom_bar(data=nrh.cn %>% filter(`Parent Activity Type`=="Adult Capture", grepl("Swim Ins", `Inventory Lot`)) %>% 
+               group_by(`Activity Start Date`) %>% summarize(n=sum(`Total Count`)),
+             aes(x=as.Date(`Activity Start Date`), y=n*1), fill="black", stat="identity", alpha=0.7) +
+    scale_y_continuous(sec.axis = sec_axis(~./1, name="Swim ins")) +
+    scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
+    scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
+    labs(x="", y="Spawning adult Chinook", fill="Behaviour", colour="Behaviour") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1)),
+  
+  nrow=2 
+)
+```
+
+Figure: Top: Chinook counts (expanded adults) and swim-ins (gray bars). Bottom: Spawning (gray) and holding (white) Chinook and swim-ins (black bars). 
+
+<br>
+
+<br>
+
+### AUC ### 
+
+```{r}
+ggarrange(
+ggplot() +
+  geom_line(data=auc23%>%filter(method=="with heli"), aes(x=as.Date(survey_date), y=`expanded adult`)) +
+  geom_point(data=auc23%>%filter(method=="with heli"), aes(x=as.Date(survey_date), y=`expanded adult`, fill=type, colour=type), shape=21, size=4) +
+  scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  labs(x="", y="Expanded adult Chinook", fill="", colour="") +
+  theme_bw(),
+
+ggplot() +
+  geom_line(data=auc23%>%filter(method=="without heli"), aes(x=as.Date(survey_date), y=`expanded adult`)) +
+  geom_point(data=auc23%>%filter(method=="without heli"), aes(x=as.Date(survey_date), y=`expanded adult`, fill=type, colour=type), shape=21, size=4) +
+  scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  labs(x="", y="Expanded adult Chinook", fill="", colour="") +
+  theme_bw(),
+nrow=2,
+common.legend = T, legend = "bottom"
+)
+```
+
+Figure: AUC curves with heli (top) and without heli (bottom) survey. 
+
+<br>
+
+Table: Escapement estimates with/without helicopter survey for each survey life value.
+```{r}
+auc23 %>% 
+  group_by(method) %>% 
+  summarize(fish_days_SL20 = round(sum(`expanded adult`)/20,0),
+            fish_days_SL225 = round(sum(`expanded adult`)/22.5,0),
+            fish_days_SL25 = round(sum(`expanded adult`)/25,0)) %>% 
+  pivot_longer(cols=c(fish_days_SL20:fish_days_SL25), names_to = "Rank", values_to="Estimate") %>% 
+  mutate(Rank = case_when(grepl("20", Rank) ~ "Low Value",
+                           grepl("225", Rank) ~ "Middle Value",
+                           grepl("25", Rank) ~ "High Value"),
+         SL = case_when(grepl("Low", Rank) ~ 20,
+                        grepl("Middle", Rank) ~ 22.5,
+                        grepl("High", Rank) ~ 25)) %>%
+  relocate(SL, .after = Rank) %>%
+  kbl(align="c") %>%
+  kable_paper("hover", full_width=T, position = "center") %>%
+  collapse_rows(columns=c(1:4), valign="middle", target=1) 
+```
+
+<br>
+
+<br>
+
+### Tributaries ### 
+
+Chinook were not seen in any Nitinat River or Lake tributaries in 2023.
+
+```{r}
+tribs.sil %>% 
+  filter(species=="Chinook") %>% 
+  group_by(system) %>% 
+  summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`))
+```
+
+
+
+
+
+
