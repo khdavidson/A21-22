@@ -40,7 +40,7 @@
    "Filters": [
       {
          "Column": "AREA",
-         "Value": "'21','22'"
+         "Value": "21,22"
       }
    ],
    "Orders": []
