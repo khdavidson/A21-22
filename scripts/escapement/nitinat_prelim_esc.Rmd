@@ -29,9 +29,9 @@ library(kableExtra)
 # ============================= Load data ============================
 
 # SILS ----------------------------
-nit.sil <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_2023.xlsx", sheet="Nitinat River raw SIL entry", guess_max=20000)
+nit.sil <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_2023  kd.xlsx", sheet="Nitinat River raw SIL entry", guess_max=20000)
 
-auc23 <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_2023.xlsx", sheet="AUC_R", guess_max=20000)
+auc23 <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_2023  kd.xlsx", sheet="AUC_R", guess_max=20000)
 
 tribs.sil <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Tribs/A22_Tributaries_2023.xlsx", sheet="Tributaries Raw SIL entry", guess_max=20000)
 
@@ -41,7 +41,9 @@ nrh.cn <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPE
 
 
 # Enviro ----------------------------
-nit.water <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/NitinatWaterLevelHydrometDataNov-16-2023 15-47.xlsx", sheet="Exported Data", guess_max=20000) %>% 
+nit.water <- list.files(here::here("data", "enviro"), pattern = "NitinatWaterLevelHydrometData", full.names = T) %>% 
+  map(~readxl::read_excel(path=.x, sheet="Exported Data", guess_max=20000)) %>%
+  purrr::list_rbind() %>%
   mutate(gauge_m = case_when(grepl("Estimated", `Staff Gauge(mH20)`) ~ NA,
                              TRUE ~ as.numeric(`Staff Gauge(mH20)`)),
          sensor_depth = case_when(grepl("Estimated", `Sensor Depth(mH20)`) ~ NA,
@@ -189,7 +191,9 @@ Figure: Top: Chinook counts (expanded adults) and swim-ins (gray bars). Bottom: 
 
 <br>
 
-### AUC ### 
+## Preliminary escapement estimate (AUC) 
+
+<br>
 
 ```{r}
 ggarrange(
@@ -198,7 +202,7 @@ ggplot() +
   geom_point(data=auc23%>%filter(method=="with heli"), aes(x=as.Date(survey_date), y=`expanded adult`, fill=type, colour=type), shape=21, size=4) +
   scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
   scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-  labs(x="", y="Expanded adult Chinook", fill="", colour="") +
+  labs(x="", y="Fish-days", fill="", colour="") +
   theme_bw(),
 
 ggplot() +
@@ -206,7 +210,7 @@ ggplot() +
   geom_point(data=auc23%>%filter(method=="without heli"), aes(x=as.Date(survey_date), y=`expanded adult`, fill=type, colour=type), shape=21, size=4) +
   scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
   scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-  labs(x="", y="Expanded adult Chinook", fill="", colour="") +
+  labs(x="", y="Fish-days", fill="", colour="") +
   theme_bw(),
 nrow=2,
 common.legend = T, legend = "bottom"
@@ -217,21 +221,11 @@ Figure: AUC curves with heli (top) and without heli (bottom) survey.
 
 <br>
 
-Table: Escapement estimates with/without helicopter survey for each survey life value.
+Table: AUC math (copy of Z:/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_2023)
+
 ```{r}
 auc23 %>% 
-  group_by(method) %>% 
-  summarize(fish_days_SL20 = round(sum(`expanded adult`)/20,0),
-            fish_days_SL225 = round(sum(`expanded adult`)/22.5,0),
-            fish_days_SL25 = round(sum(`expanded adult`)/25,0)) %>% 
-  pivot_longer(cols=c(fish_days_SL20:fish_days_SL25), names_to = "Rank", values_to="Estimate") %>% 
-  mutate(Rank = case_when(grepl("20", Rank) ~ "Low Value",
-                           grepl("225", Rank) ~ "Middle Value",
-                           grepl("25", Rank) ~ "High Value"),
-         SL = case_when(grepl("Low", Rank) ~ 20,
-                        grepl("Middle", Rank) ~ 22.5,
-                        grepl("High", Rank) ~ 25)) %>%
-  relocate(SL, .after = Rank) %>%
+  relocate(method, .before=survey_date) %>% 
   kbl(align="c") %>%
   kable_paper("hover", full_width=T, position = "center") %>%
   collapse_rows(columns=c(1:4), valign="middle", target=1) 
@@ -239,9 +233,35 @@ auc23 %>%
 
 <br>
 
+Table: Escapement estimates with/without helicopter survey for each survey life value.
+```{r}
+auc23 %>% 
+  group_by(method) %>% 
+  summarize(fish_days_SL15 = round(sum(`expanded adult`)/15,0),
+            fish_days_SL20 = round(sum(`expanded adult`)/20,0),
+            fish_days_SL25 = round(sum(`expanded adult`)/25,0)) %>% 
+  pivot_longer(cols=c(fish_days_SL15:fish_days_SL25), names_to = "Rank", values_to="Estimate") %>% 
+  mutate(Rank = case_when(grepl("15", Rank) ~ "Low Value",
+                           grepl("20", Rank) ~ "Middle Value",
+                           grepl("25", Rank) ~ "High Value"),
+         SL = case_when(grepl("Low", Rank) ~ 15,
+                        grepl("Middle", Rank) ~ 20,
+                        grepl("High", Rank) ~ 25),
+         Est_without_swimins = Estimate-6846) %>%
+  relocate(SL, .after = Rank) %>%
+  kbl(align="c") %>%
+  kable_paper("hover", full_width=T, position = "center") %>%
+  collapse_rows(columns=c(1:4), valign="middle", target=1) 
+```
 <br>
 
-### Tributaries ### 
+For 2023 estimate we went with SL=15 for three reasons: First, there were a lot more swim-ins than usual this year, which was attributed to the COVID releases leaving the hatchery directly rather than being reared in the lake pen. Fish homing to the hatchery may have had more directed migration and therefore not stayed in the system long. Second, the higher estimate from the shorter SL resulted in an estimate that was high enough to cover the raw peak live count of ~15k,  but once removing the 6846 swim-ins still resulted in a reasonable estimate that agreed with what the hatchery observed. Third, there may have been a slight delay in entry as the water was low for the early season and rains were a bit later than usual (though not as late as 2022). 
+
+<br>
+
+<br>
+
+## Tributaries
 
 Chinook were not seen in any Nitinat River or Lake tributaries in 2023.
 
