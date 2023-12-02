@@ -9,14 +9,15 @@ output:
     toc_collapsed: false 
     toc_depth: 5
     number_sections: true
-knit: (function(inputFile, encoding) { 
-  rmarkdown::render(inputFile, encoding=encoding, output_file=paste0(substr(inputFile,1,nchar(inputFile)-4), "_PRELIMINARY_", format(Sys.Date(), sep="_", "%Y-%m-%d"), '.html')) 
-  }
-  )
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=F, warning=F, message=F)
+# Function for appending date to html output - copy into YAML below output:
+  # knit: (function(inputFile, encoding) { 
+  #   rmarkdown::render(inputFile, encoding=encoding, output_file=paste0(substr(inputFile,1,nchar(inputFile)-4), "_PRELIMINARY_", format(Sys.Date(), sep="_", "%Y-%m-%d"), '.html')) 
+  #   }
+  #   )
 
 # Load libraries ----------------------------
 library(tidyverse)
