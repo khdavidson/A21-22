@@ -549,7 +549,7 @@ AUC23 %>%
 
 ### Estimate decision:
 
-For 2023 estimate we went with PL+D as even the highest AUC estimate didn't cover the peak raw live count. Expanded PL+D = ~1376 adults and ~156 jacks. 
+For 2023 estimate we went with PL+D as even the highest AUC estimate didn't cover the peak raw live count and timing/coverage wasn't great for AUC (no spawning observed). Expanded PL+D = 1364 adults + 154 jacks (1518 total). ADDED swim-ins due to survey timing relative to swim ins this year (see graph above - swim ins were already in the hatchery by the time the PL+D count happened): 1092 adult swim-ins and 58 jacks. With swim-ins added, final escapement estimate is tentatively  1364+1092 = 2456 adults + 212 jacks (2668 total). *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
 
 <br>
 
@@ -1359,52 +1359,7 @@ Figure: 2023 preliminary adult Chinook escapement estimate (orange) relative to 
 
 
 
+# **Pink** 
 
-<br>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<br>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+No consistent WCVI pink runs. For 2023 pink count was n=4. 
 
