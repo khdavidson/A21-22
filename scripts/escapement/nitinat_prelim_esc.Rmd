@@ -886,7 +886,7 @@ AUC23 %>%
 
 ### Estimate decision:
 
-For 2023 suggest AUC with short SL (8-15 days),  mid value = ~27,530 and subtract swim-ins for the accounting (6201) leaves ~21,329 chum.
+For 2023 used AUC with SL=11.5 days (mid value) to give exapnded estimate of 27,530. Swim-ins need to be SUBTRACTED from this to account for fish that were likely double-counted: the peak live count occurred on the full system heli survey and therefore likely counted chum that later swam into the hatchery (see swim-in graph above). Subtracting the swim-ins for accounting (6186) leaves 21,344 chum.
 
 <br>
 
@@ -1281,7 +1281,7 @@ AUC23 %>%
 
 ### Estimate decision:   
 
-For 2023 estimate we went with expand AUC SL=15 for three reasons: First, there were a lot more swim-ins than usual this year, which was attributed to the COVID releases leaving the hatchery directly rather than being reared in the lake pen. Fish homing to the hatchery may have had more directed migration and therefore not stayed in the system long. Second, the higher estimate from the shorter SL resulted in an estimate that was high enough to cover the raw peak live count of ~15k,  but once removing the `r nrh.cn %>% filter(grepl("Swim In", InventoryLot) & ParentActivityType=="Adult Capture" & SourceLocationType=="Brailer" & MaturityClass %in% c("Male","Female")) %>% summarize(n=sum(TotalCount)) %>% pull(n)` adult and `r nrh.cn %>% filter(grepl("Swim In", InventoryLot) & ParentActivityType=="Adult Capture" & SourceLocationType=="Brailer" & MaturityClass=="Jack") %>% summarize(n=sum(TotalCount)) %>% pull(n)` jack swim-ins, still resulted in a reasonable estimate that agreed with what the hatchery observed. Third, there may have been a slight delay in entry as the water was low for the early season and rains were a bit later than usual (though not as late as 2022). The Expanded AUC adult estimate for 2023 spawners = ~21,093 before swim-ins, ~14,247 after swimins removed; expanded jacks = ~107 before swim-ins, removal of swim-ins results in ~0 jacks (may need to tweak jack SL to balance).  *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*  
+For 2023 estimate we went with expand AUC SL=15 for three reasons: First, there were a lot more swim-ins than usual this year, which was attributed to the COVID releases leaving the hatchery directly rather than being reared in the lake pen. Fish homing to the hatchery may have had more directed migration and therefore not did not stay in the system long. Second, the higher estimate from the shorter SL resulted in an estimate that was high enough to cover the raw peak live count of ~15k,  but once removing the 6846 adult and 113 jack swim-ins, still resulted in a reasonable estimate that agreed with what the hatchery observed. Third, there may have been a slight delay in entry as the water was low for the early season and rains were a bit later than usual (though not as late as 2022). The Expanded AUC adult estimate for 2023 spawners = 21,093 adults and 116 jacks. After swim-in removal, final estimate is 14,247 adults and 3 jacks.  *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*  
 
 <br>
 
