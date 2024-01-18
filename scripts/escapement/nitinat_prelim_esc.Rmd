@@ -275,7 +275,7 @@ AUC23 %>%
 
 ### Estimate decision:
 
-Low water was a migration barrier and likely meant sockeye were much more visible to surveyors later in the season than usual (they were prevented from migrating further upstream to Parker Creek); 2023 estimate may be much higher than previous years. An AUC estimate may be considered as we know we saw the same ~300 fish over 3-4 surveys. AUC estimate using longer survey life 30-40 days is ~500 adults.  *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
+For 2023 used an AUC estimate with SL=35 days. Low water was a migration barrier and likely meant sockeye were much more visible to surveyors later in the season than usual (they were prevented from migrating further upstream to Parker Creek); therefore 2023 estimate may be much higher relative to previous years. Expanded escapement estimate with 35 day survey life is 509 adults + 10 jacks (519 total). Type-4 estimate due to frequent surveys, but slightly wrong time of year. Heli survey excluded. See Chinook section for commentary about expansions for omission of Reach 5-4 on Oct 5 survey due to bear activity.  *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
 
 <br>
 
