@@ -151,14 +151,14 @@ Figure: Live Adult sockeye raw counts (blue) and counts expanded for % populatio
 
 Period of time log jam was impassable to sockeye in 2023. 
 
-```{r}
+```{r include=F}
 nit.water %>% 
   group_by(date) %>% 
   summarize(mean = mean(gauge_m)) %>% 
   mutate(mean = round(mean, 1)) %>% group_by(threshold=mean<=1.1) %>% group_by(threshold) %>% 
   kbl(align="c") %>%
-  kable_paper("hover", full_width=T, position = "center") %>%
-  collapse_rows(columns=c(1:4), valign="middle", target=1) 
+  kable_paper("hover", full_width=T, position = "center") #%>%
+  #collapse_rows(columns=c(1:4), valign="middle", target=1) 
 ```
 
 
