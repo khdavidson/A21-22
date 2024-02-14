@@ -37,12 +37,8 @@ analysis_year <- 2023
 
 
 # ============================= Load data ============================
-# OneDrive directory:
-OD.dir <- paste("C:/Users", Sys.info()[6], "OneDrive - DFO-MPO/# Escapement Estimates/# 2023/Area 21-22/", sep="/")
-
 
 # Raw SIL DATA ----------------------------
-
 # Raw SIL entry for Nitinat lower/mid/upper designations compared to water level etc: 
 nit.sil <- list.files(paste0("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/",
                              analysis_year,
@@ -64,9 +60,7 @@ tribs.sil <- list.files(paste0("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCA
 
 
 
-
 # SIL+AUC DATABASE DATA ----------------------------
-
 # SIL+AUC DB TABLE: Waterbody values (to join to EscEStSppHeader table):
 wbdyVals <- readxl::read_excel(path=here("data", "escapement", "prelim-inseason", "WaterbodiesValues.xlsx")) %>% 
   mutate(AREA = case_when(NAME=="TUCK LAKE" ~ "22",
@@ -88,10 +82,8 @@ wbdyVals <- readxl::read_excel(path=here("data", "escapement", "prelim-inseason"
   print()
 
 
-
 # SIL+AUC DB TABLE: AUC Data Table for analysis: 
 AUCdataTable <- readxl::read_excel(path=here("data", "escapement", "prelim-inseason", "AUC_DataAnalysisTable_area21-22.xlsx"))
-
 
 
 # SIL+AUC DB TABLE: EscEstSppHeader table:
@@ -116,12 +108,6 @@ escEstAUC <- readxl::read_excel(path=here("data", "escapement", "prelim-inseason
             na_matches="never", relationship="many-to-one") %>% 
   mutate(method = case_when(DateRange== "2023/10/12 - 2023/10/26" ~ "heli",
                             TRUE ~ "snorkel"))
-
-
-
-# SIL+AUC database ----------------------------
-#ver23 <- readxl::read_excel(path=paste0(OD.dir, "Area22_SIL+AUC_database_output_2024-01-05 - AUC.xlsx"), sheet="raw")
-#AUC23 <- readxl::read_excel(path=paste0(OD.dir, "Area22_SIL+AUC_database_output_2024-01-05 - AUC.xlsx"), sheet="AUC")
 
 
 
@@ -178,6 +164,7 @@ nit.rtStWk$stat_week <- factor(nit.rtStWk$stat_week,
                                         "101","102","103","104","105",
                                         "111","112","113","114","115",
                                         "121","122","123","124", ordered=T))
+
 
 # Escapement ----------------------------
 nit.esc <- readxl::read_excel(path=here("data", "escapement", "NuSEDS_Area21-22_escapement_Jan2024.xlsx"), sheet="Data")
@@ -248,7 +235,7 @@ ggarrange(
     theme(axis.text.x = element_text(angle=45, hjust=1)) +
     facet_wrap(~species),
   
-  nrow=1, common.legend = T)
+  nrow=2, common.legend = T)
 ```
 
 Figure: Number and proportion of counts in segment 5-4 (pink) compared to the other segments (blue) for all species. Black outline indicates the day where segment 5-4 was approximated from afar. 
@@ -503,7 +490,7 @@ ggplot() +
   theme_bw()
 ```
 
-Figure: AUC curvey for Nitinat mainstem Sockeye. Note in 2023 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
+Figure: AUC curve for Nitinat mainstem Sockeye. Note in 2023 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
 
 <br>
 
@@ -550,7 +537,7 @@ escEstSpp %>%
 
 ### Estimate decision:
 
-For 2023 used an AUC estimate with SL=35 days. Low water was a migration barrier and likely meant sockeye were much more visible to surveyors later in the season than usual (they were prevented from migrating further upstream to Parker Creek); therefore 2023 estimate may be much higher relative to previous years. Expanded escapement estimate with 35 day survey life is 509 adults + 10 jacks (519 total). Type-4 estimate due to frequent surveys, but slightly wrong time of year. Heli survey excluded. See Chinook section for commentary about expansions for omission of Reach 5-4 on Oct 5 survey due to bear activity.  *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
+For 2023 used an AUC estimate with SL=35 days. Low water was a migration barrier and likely meant sockeye were much more visible to surveyors later in the season than usual (they were prevented from migrating further upstream to Parker Creek); therefore 2023 estimate may be much higher relative to previous years. Expanded escapement estimate with 35 day survey life is 509 adults + 10 jacks (519 total). Type-4 estimate due to frequent surveys, but slightly wrong time of year. Heli survey excluded. See beginning section for commentary about expansions for omission of Reach 5-4 on Oct 5 survey due to bear activity.  *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
 
 <br>
 
@@ -817,7 +804,7 @@ ggplot() +
   theme_bw()
 ```
 
-Figure: AUC curvey for Nitinat mainstem Coho. Note in 2023 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
+Figure: AUC curve for Nitinat mainstem Coho. Note in 2023 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
 
 <br>
 
@@ -863,7 +850,7 @@ escEstSpp %>%
 
 ### Estimate decision:
 
-For 2023 estimate we went with PL+D as even the highest AUC estimate didn't cover the peak raw live count and timing/coverage wasn't great for AUC (no spawning observed). Expanded PL+D = 1364 adults + 154 jacks (1518 total). ADDED swim-ins due to survey timing relative to swim ins this year (see graph above - swim ins were already in the hatchery by the time the PL+D count happened): 1092 adult swim-ins and 58 jacks. With swim-ins added, final escapement estimate is  1364+1092 = 2456 adults + 212 jacks (2668 total). *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
+For 2023 estimate we went with PL+D as even the highest AUC estimate didn't cover the peak raw live count and timing/coverage wasn't great for AUC (no spawning observed). Expanded PL+D = 1364 adults + 154 jacks (1518 total). ADDED swim-ins due to survey timing relative to swim ins this year (see graph above - swim ins were already in the hatchery by the time the PL+D count happened): 1092 adult swim-ins and 58 jacks. With swim-ins added, final escapement estimate is  1364+1092 = 2456 adults + 212 jacks (2668 total). See beginning section for commentary about expansions for omission of Reach 5-4 on Oct 5 survey due to bear activity. *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
 
 <br>
 
@@ -1126,7 +1113,7 @@ ggplot() +
   theme_bw()
 ```
 
-Figure: AUC curvey for Nitinat mainstem Chum.  
+Figure: AUC curve for Nitinat mainstem Chum.  
 
 <br>
 
@@ -1171,7 +1158,7 @@ escEstSpp %>%
 
 ### Estimate decision:
 
-For 2023 used AUC with SL=11.5 days (mid value) to give expanded estimate of 27,530. Swim-ins need to be SUBTRACTED from this to account for fish that were likely double-counted: the peak live count occurred on the full system heli survey and therefore likely counted chum that later swam into the hatchery (see swim-in graph above). Subtracting the swim-ins for accounting (6186) leaves 21,344 chum.
+For 2023 used AUC with SL=11.5 days (mid value) to give expanded estimate of 27,530. Swim-ins need to be SUBTRACTED from this to account for fish that were likely double-counted: the peak live count occurred on the full system heli survey and therefore likely counted chum that later swam into the hatchery (see swim-in graph above). Subtracting the swim-ins for accounting (6186) leaves 21,344 chum. See beginning section for commentary about expansions for omission of Reach 5-4 on Oct 5 survey due to bear activity. *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
 
 <br>
 
@@ -1360,16 +1347,99 @@ Figure: Expanded adult Chinook counts (large bars) and swim-ins (narrow black ba
 
 <br>
 
-## Preliminary escapement estimate (AUC/PL+D) 
+## Tributaries (River and Lake)
+
+Chinook were not seen in any Nitinat River or Lake tributaries in 2023.
+
+```{r}
+tribs.sil %>% 
+  filter(species=="Chinook") #%>% 
+  # group_by(system) %>% 
+  # summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`),
+  #           dead_adults = sum(`adults dead`)) %>%
+  # mutate(across(c(exp_ad_live:dead_adults), ~round(., 0))) %>%
+  # kbl(align="c") %>%
+  # kable_paper("hover", full_width=T, position = "center") %>%
+  # collapse_rows(columns=c(1), valign="middle", target=1) 
+```
 
 <br>
 
-Table: Raw chinook counts
+```{r}
+ggplot() +
+  geom_bar(data=nit.sil %>% 
+             filter(species=="Chinook") %>% 
+             group_by(surveyNum, date, system) %>% 
+             summarize(Spawning=sum(`adults # spawning`),
+                       Holding = sum(`adults # holding`)) %>% 
+             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
+           aes(x=as.Date(date), y=count, fill=behaviour, colour=system), 
+           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
+  geom_bar(data = tribs.sil %>% 
+             filter(species=="Chinook", trib_status=="Nitinat trib") %>% 
+             group_by(system, date) %>% 
+             summarize(Spawning=sum(`adults # spawning`),
+                       Holding = sum(`adults # holding`)) %>% 
+             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
+           aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
+  scale_y_continuous(sec.axis = sec_axis(~./1, name="Trib count")) +
+  scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
+  labs(x="", y="mainstem count") +
+  theme_bw()
+```
+
+Figure: Mainstem Nitinat (pink) and trib (blue/green) counts for Chinook adults (raw).  
+
+<br>
+
+<br>
+
+## AUC assessments
+
+<br>
+
+The information below is meant to assist with determining if AUC is an appropriate method, and whether to include/exclude certain surveys. 
+
+<br>
+
+Table: AUC math for systems receiving AUC estimate in `r analysis_year`
 
 ```{r}
-ver23 %>% 
+escEstAUC %>%
+  filter(AREA!="20", ShortSpecies=="CN", grepl("Nitinat", SystemName)) 
+```
+
+<br>
+
+```{r}
+ggplot() +
+  geom_line(data=escEstAUC%>%filter(ShortSpecies=="CN", AREA!="20", grepl("Nitinat", SystemName)), 
+            aes(x=as.Date(DateRange), y=ExpAdultFishDays)) +
+  geom_point(data=escEstAUC%>%filter(ShortSpecies=="CN", AREA!="20", grepl("Nitinat", SystemName)), 
+             aes(x=as.Date(DateRange), y=ExpAdultFishDays, fill=method, colour=method), shape=21, size=4) +
+  scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  labs(x="", y="Fish-days", fill="Survey method", colour="Survey method") +
+  theme_bw()
+```
+
+Figure: AUC curve for Nitinat mainstem Chinook.  
+
+<br>
+
+<br>
+
+## Area 21-22 preliminary escapement estimates (AUC/PL+D) 
+
+<br>
+
+Table: Raw swim data (raw and expanded live and dead) for Chinook.
+
+```{r}
+AUCdataTable %>% 
   filter(ShortSpecies=="CN") %>% 
-  select(-c(FabricatedZero)) %>% 
+  select(ShortSpecies,Section_AreaInspected, SDate, WaterTemperature, WaterClarity, LiveAdults, DeadAdults,LiveJacks,DeadJacks, ExpLiveAdults,
+         ExpDeadAdults, ExpLiveJacks, ExpDeadJacks, OverallReliability, EstPctSeen) %>% 
   mutate(across(c(LiveAdults:ExpDeadJacks), ~round(., 0))) %>% 
   kbl(align="c") %>%
   kable_paper("hover", full_width=T, position = "center") %>%
@@ -1378,71 +1448,17 @@ ver23 %>%
 
 <br>
 
-```{r}
-ggarrange(
-ggplot() +
-  geom_line(data=AUC23%>%filter(estMethod=="with heli", species=="Chinook"), aes(x=as.Date(Date), y=ExpAdultFishDays)) +
-  geom_point(data=AUC23%>%filter(estMethod=="with heli", species=="Chinook"), 
-             aes(x=as.Date(Date), y=ExpAdultFishDays, fill=surveyMethod, colour=surveyMethod), shape=21, size=4) +
-  scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-  scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-  labs(x="", y="Fish-days", fill="", colour="") +
-  theme_bw(),
-
-ggplot() +
-  geom_line(data=AUC23%>%filter(estMethod=="without heli", species=="Chinook"), aes(x=as.Date(Date), y=ExpAdultFishDays)) +
-  geom_point(data=AUC23%>%filter(estMethod=="without heli", species=="Chinook"), 
-             aes(x=as.Date(Date), y=ExpAdultFishDays, fill=surveyMethod, colour=surveyMethod), shape=21, size=4) +
-  scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-  scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-  labs(x="", y="Fish-days", fill="", colour="") +
-  theme_bw(),
-
-nrow=2,
-common.legend = T, legend = "bottom"
-)
-```
-
-Figure: Chinook AUC curves with heli (top) and without heli (bottom) survey. 
-
-<br>
-
-Table: AUC math (SIL+AUC database math extracted: SIL+AUC_database_output_2024-01-03 - AUC.xlsx)
+Table: Escapement estimates for each system.   
 
 ```{r}
-AUC23 %>% 
-  filter(species=="Chinook") %>% 
-  relocate(surveyMethod, .before=Date) %>% 
-  kbl(align="c") %>%
-  kable_paper("hover", full_width=T, position = "center") %>%
-  collapse_rows(columns=c(1:4), valign="middle", target=1) 
-```
-
-<br>
-
-Table: Escapement estimates with/without helicopter survey for each survey life value.
-```{r}
-AUC23 %>% 
-  filter(species=="Chinook") %>%
-  select(-c(species)) %>%
-  group_by(estMethod) %>% 
-  summarize(fishDays = sum(ExpAdultFishDays),
-            est_SL15 = round(fishDays/15,0),
-            est_SL20 = round(fishDays/20,0),
-            est_SL25 = round(fishDays/25,0)) %>% 
-  pivot_longer(cols=c(est_SL15:est_SL25), names_to = "Rank", values_to="Estimate") %>% 
-  mutate(Rank = case_when(grepl("15", Rank) ~ "Low Value",
-                           grepl("20", Rank) ~ "Middle Value",
-                           grepl("25", Rank) ~ "High Value"),
-         SL = case_when(grepl("Low", Rank) ~ 15,
-                        grepl("Middle", Rank) ~ 20,
-                        grepl("High", Rank) ~ 25),
-         Est_without_swimins = Estimate - (nrh.cn %>% 
-              filter(grepl("Swim In", InventoryLot) & ParentActivityType=="Adult Capture" & SourceLocationType=="Brailer" & 
-                       MaturityClass%in%c("Male","Female")) %>% 
-              summarize(n=sum(TotalCount)) %>%
-              pull(n))) %>%
-  relocate(SL, .after = Rank) %>%
+escEstSpp %>% 
+  filter(ShortSpecies=="CN", AREA!="20") %>% 
+  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, contains("Raw"), contains("FishDays"))) %>% 
+  relocate(c(SystemName, AREA), .before=ShortSpecies) %>% 
+  rename(FinalAdultEstimate = AdultNaturalReco,
+         FinalJackEstimate = JackNaturalReco) %>% 
+  mutate(across(FinalJackEstimate:FinalAdultEstimate, ~case_when(.<0 ~ 0,
+                                                                 TRUE ~ .))) %>%
   kbl(align="c") %>%
   kable_paper("hover", full_width=T, position = "center") %>%
   collapse_rows(columns=c(1:4), valign="middle", target=1) 
@@ -1452,24 +1468,7 @@ AUC23 %>%
 
 ### Estimate decision:   
 
-For 2023 estimate we went with expand AUC SL=15 for three reasons: First, there were a lot more swim-ins than usual this year, which was attributed to the COVID releases leaving the hatchery directly rather than being reared in the lake pen. Fish homing to the hatchery may have had more directed migration and therefore not did not stay in the system long. Second, the higher estimate from the shorter SL resulted in an estimate that was high enough to cover the raw peak live count of ~15k,  but once removing the 6846 adult and 113 jack swim-ins, still resulted in a reasonable estimate that agreed with what the hatchery observed. Third, there may have been a slight delay in entry as the water was low for the early season and rains were a bit later than usual (though not as late as 2022). The Expanded AUC adult estimate for 2023 spawners = 21,093 adults and 116 jacks. After swim-in removal, final estimate is 14,247 adults and 3 jacks.  *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*  
-
-<br>
-
-<br>
-
-## Tributaries
-
-Chinook were not seen in any Nitinat River or Lake tributaries in 2023.
-
-```{r}
-tribs.sil %>% 
-  filter(species=="Chinook") %>% 
-  group_by(system) %>% 
-  summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`)) %>%
-  kbl(align="c") %>%
-  kable_paper("hover", full_width=T, position = "center") 
-```
+For 2023 estimate we went with expand AUC SL=15 for three reasons: First, there were a lot more swim-ins than usual this year, which was attributed to the COVID releases leaving the hatchery directly rather than being reared in the lake pen. Fish homing to the hatchery may have had more directed migration and therefore not did not stay in the system long. Second, the higher estimate from the shorter SL resulted in an estimate that was high enough to cover the raw peak live count of ~15k,  but once removing the 6846 adult and 113 jack swim-ins, still resulted in a reasonable estimate that agreed with what the hatchery observed. Third, there may have been a slight delay in entry as the water was low for the early season and rains were a bit later than usual (though not as late as 2022). The Expanded AUC adult estimate for 2023 spawners = 21,093 adults and 116 jacks. After swim-in removal, final estimate is 14,247 adults and 3 jacks. See beginning section for commentary about expansions for omission of Reach 5-4 on Oct 5 survey due to bear activity. *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*  
 
 <br>
 
@@ -1491,7 +1490,7 @@ ggplot() +
         legend.box = "horizontal")
 ```
 
-Figure: Return timing of Chinook in 2023 relative to recent returns. 
+Figure: Raw swim counts (blue) from this year compared to historical raw swim counts. Stat weeks indicate the month (8=August, 12=December) and week of momth (1=first week, 2=2nd week, etc.), e.g., 81=First week of August, 91=First week of September, etc. 
 
 <br>
 
@@ -1502,14 +1501,17 @@ ggplot()  +
            aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
   geom_bar(data=nit.esc %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CK"), 
            aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
-  geom_bar(aes(x=analysis_year, y=14252), stat="identity", colour="orange", fill="orange", alpha=0.8) +   
-  scale_x_continuous(breaks=seq(min(nit.esc$`Analysis Year`), analysis_year, by=2)) +
+  geom_bar(data=escEstSpp %>% 
+             filter(ShortSpecies=="CN", AREA!="20", grepl("Nitinat", SystemName)) %>% 
+             select(Year, SystemName, AdultNaturalReco) %>% 
+             summarize(n=sum(AdultNaturalReco)), 
+             aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +  scale_x_continuous(breaks=seq(min(nit.esc$`Analysis Year`), analysis_year, by=2)) +
   labs(x="Return year", y="Chinook spawners") +
   theme_bw()+
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
 
-Figure: 2023 preliminary adult Chinook escapement estimate (orange) relative to historical adult (blue) and unspecified (gray) escapement estimates.
+Figure: `r analysis_year` preliminary adult Chinook escapement estimate (red outline) relative to historical adult (blue) and unspecified (gray) escapement estimates.
 
 <br>
 
@@ -1532,5 +1534,30 @@ Figure: 2023 preliminary adult Chinook escapement estimate (orange) relative to 
 
 # **Pink** 
 
-No consistent WCVI pink runs. For 2023 pink count was n=4. 
+No consistent WCVI pink runs. 
+
+## Area 21-22 preliminary escapement estimates 
+
+<br>
+
+Table: Escapement estimates for each system.   
+
+```{r}
+escEstSpp %>% 
+  filter(ShortSpecies=="PK", AREA!="20") %>% 
+  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, contains("Raw"), contains("FishDays"))) %>% 
+  relocate(c(SystemName, AREA), .before=ShortSpecies) %>% 
+  rename(FinalAdultEstimate = AdultNaturalReco,
+         FinalJackEstimate = JackNaturalReco) %>% 
+  mutate(across(FinalJackEstimate:FinalAdultEstimate, ~case_when(.<0 ~ 0,
+                                                                 TRUE ~ .))) %>%
+  kbl(align="c") %>%
+  kable_paper("hover", full_width=T, position = "center") %>%
+  collapse_rows(columns=c(1:4), valign="middle", target=1) 
+```
+
+
+
+
+
 
