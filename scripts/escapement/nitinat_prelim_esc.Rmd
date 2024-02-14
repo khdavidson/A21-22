@@ -191,6 +191,107 @@ nit.esc.goal <- read.csv(here("data", "escapement", "wcviCK-BootstrappedRPs.csv"
 <br>
 
 
+# Infilling missing segment (2023)
+
+<br> 
+
+On Oct 5 the section 5-4 (Eagle Pool) was not swum due to bears - a bank wank and approximation from a distance occurred. 
+
+```{r}
+ggarrange(
+  ggplot() +
+    geom_bar(data=nit.sil %>%
+               filter(species%notin%c("Steelhead", "Cutthroat Trout")) %>%
+               mutate(group = case_when(segment=="5-4" ~ "5-4",
+                                        TRUE ~ "other")) %>%
+               group_by(date, group, species) %>%
+               summarize(total_adults = sum(`adults live`)),
+             aes(x=as.Date(date), y=total_adults, fill=group, colour=group), stat="identity") +
+    geom_bar(data=nit.sil %>% 
+               filter(species%notin%c("Steelhead", "Cutthroat Trout")) %>% 
+               mutate(group = case_when(segment=="5-4" ~ "5-4",
+                                        TRUE ~ "other")) %>%
+               group_by(date, species) %>% 
+               summarize(total_adults = sum(`adults live`)) %>%
+               filter(date==as.Date("2023-10-05")),
+             aes(x=as.Date(date), y=total_adults), stat="identity", fill="transparent", colour="black", width=5) +
+    scale_x_date(breaks="5 day", date_labels="%b %d") +
+    labs(x="", y="Total raw adults") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1)) +
+    facet_wrap(~species, scales="free_y"),
+  
+  
+  
+  ggplot() +
+    geom_bar(data=nit.sil %>% 
+               filter(species%notin%c("Steelhead", "Cutthroat Trout")) %>% 
+               mutate(group = case_when(segment=="5-4" ~ "5-4",
+                                        TRUE ~ "other")) %>%
+               group_by(date, group, species) %>% 
+               summarize(total_adults = sum(`adults live`)) %>% 
+               group_by(date, species) %>% 
+               mutate(perc = total_adults/sum(total_adults)),
+             aes(x=as.Date(date), y=perc, fill=group, colour=group), stat="identity") +
+    geom_bar(data=nit.sil %>% 
+               filter(species%notin%c("Steelhead", "Cutthroat Trout")) %>% 
+               mutate(group = case_when(segment=="5-4" ~ "5-4",
+                                        TRUE ~ "other")) %>%
+               group_by(date, species) %>% 
+               summarize(total_adults = sum(`adults live`)) %>% 
+               filter(date==as.Date("2023-10-05")),
+             aes(x=as.Date(date), y=1), stat="identity", fill="transparent", colour="black", width=5) +
+    scale_x_date(breaks="5 day", date_labels="%b %d") +
+    scale_y_continuous(breaks=seq(0,1,by=0.1)) +
+    labs(x="", y="Percent of total adult count") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1)) +
+    facet_wrap(~species),
+  
+  nrow=1, common.legend = T)
+```
+
+Figure: Number and proportion of counts in segment 5-4 (pink) compared to the other segments (blue) for all species. Black outline indicates the day where segment 5-4 was approximated from afar. 
+
+<br>
+
+Notes:
+
++ The survey following the Oct 5 incomplete survey was Oct 12, which was the flight and so had no reach-specific counts. 
+
++ The Chinook count on Oct 5 in segment 5-4 was much less than what was observed the survey before (Sept 29). In the survey before, segment 5-4 accounted for ~13% of the population (or in other words, 87% existed outside of segment 5-4). By Oct 26 there were very few Chinook left in the system. Reach 5-4 is mostly a holding area, so we would expect a few more Chinook holding in the deeper pool on Oct 5 than noted (fish would still be coming into spawn), but it is very close to Chinook spawning so they likely would have moved off into spawning grounds around this time or very soon after given the rains were already happening. **Therefore recommend applying 95% pop for Chinook**. 
+
++ The Chum count on Oct 5 in segment 5-4 is less than observed Sept 29, but not much less. In the survey before, segment 5-4 accounted for about 20% of the population (or conversely, 80% existed outside of segment 5-4). There were still fish in segment 5-4 on Oct 26, but obviously declining numbers as Chum were moving into the spawning grounds from holding pools. We would expect then that on Oct 5 there should still have been a considerable number holding, especially because they peaked the week after on the Oct 12 heli survey. **Therefore recommend applying 90% of pop to Chum**. 
+
++ The Coho count is also considerably less on Oct 5 compared to Sept 29 for segment 5-4. On Sept 29 segment 5-4 accounted for about 20% of the population (or in other words, 80% existed outside of segment 5-4). However, there were no coho in that segment Oct 26, which suggests that although Coho come into the river and hold for a long time before spawning, segment 5-4 may not be a preferred holding location, and they  may shoot up to hold closer to tributaries or in even deeper pools (Eagle Pool has infilled in recent years). **Therefore recommend applying 90% of pop to Coho**. 
+
+<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1151,24 +1252,26 @@ Six snorkel surveys and one helicopter survey were conducted for Chinook in 2023
 
 <br>
 
-## Raw vs expanded counts
+## Area 21-22 raw vs expanded counts
 
 Counts are expanded for both % population surveyed and/or observer efficiency, depending on survey conditions.  
 
 ```{r}
 ggplot() +
-  geom_bar(data=ver23 %>% 
+  geom_bar(data=AUCdataTable %>% 
              filter(ShortSpecies=="CN") %>% 
-             pivot_longer(LiveAdults:ExpDeadJacks, names_to="est_type", values_to="n") %>% 
+             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
              filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
-           aes(x=as.Date(Date), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
-  labs(x="", y="Adult Chinook counts", fill="Expansion", colour="Expansion") +
+           aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
+  labs(x="", y="Adult Coho counts", fill="Expansion", colour="Expansion") +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle=45, hjust=1))
+  theme(axis.text.x = element_text(angle=45, hjust=1),
+        legend.position = "bottom") +
+  facet_wrap(~Section_AreaInspected, scales="free_y")
 ```
 
-Figure: Live Adult Coho raw counts (blue) and counts expanded for % population and/or OE (pink). 
+Figure: Live Adult Chinook raw counts (blue) and counts expanded for % population and/or OE (pink). 
 
 <br>
 
@@ -1182,12 +1285,9 @@ ggplot() +
             aes(x=as.Date(date), y=mean*5000), colour="dodger blue") +
   geom_bar(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
              summarize(n=sum(`adults live / habitat seen (# Est Live)`)), 
-           aes(x=as.Date(date), y=n, group=type, fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
+           aes(x=as.Date(date), y=n, group=type, 
+               fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
            stat="identity", position="stack", alpha=0.7) +
-  # geom_line(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date) %>% 
-  #             summarize(n=sum(`adults dead`)), 
-  #           aes(x=as.Date(date), y=n), 
-  #           stat="identity", position="stack") +
   labs(x="", y="Expanded adult Chinook") +
   scale_y_continuous(sec.axis = sec_axis(~./5000, name="Staff gauge (m)")) +
   scale_x_date(date_breaks="7 day", date_labels="%b %d") +
@@ -1205,28 +1305,11 @@ Figure: Chinook counts (expanded adults) and water levels (blue line)
 ## Behaviour & carcasses
 
 ```{r}
-  # ggplot() +
-  #   geom_bar(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
-  #              summarize(n=sum(`adults live / habitat seen (# Est Live)`)), 
-  #            aes(x=as.Date(date), y=n, fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
-  #            stat="identity", position="stack", alpha=0.7) +
-  #   geom_point(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date) %>% 
-  #                summarize(n=sum(`adults dead`)), 
-  #              aes(x=as.Date(date), y=n*10), size=2, alpha=0.5) +
-  #   geom_line(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date) %>% 
-  #               summarize(n=sum(`adults dead`)), 
-  #             aes(x=as.Date(date), y=n*10), 
-  #             stat="identity", position="stack") +
-  #   scale_y_continuous(sec.axis = sec_axis(~./10, name="Carcasses")) +
-  #   scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
-  #   labs(x="", y="Expanded live adult Chinook", fill="Segment", colour="Segment") +
-  #   theme_bw() +
-  #   theme(axis.text.x = element_text(angle=45, hjust=1)),
-  
   ggplot() +
     geom_bar(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
                summarize(Spawning=sum(`adults # spawning`),
-                         Holding = sum(`adults # holding`)) %>% pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
+                         Holding = sum(`adults # holding`)) %>% 
+               pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
              aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
              stat="identity", position="stack", alpha=0.7, size=1) +
     geom_point(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date) %>% 
@@ -1253,24 +1336,11 @@ Figure: Expanded live adult Chinook (bars) and carcasses (black line). Bar fill 
 ## Snorkel & swim-in counts
 
 ```{r}
-  # ggplot() +
-  #   geom_bar(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
-  #              summarize(n=sum(`adults live / habitat seen (# Est Live)`)), 
-  #            aes(x=as.Date(date), y=n, group=type, fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
-  #            stat="identity", position="stack", alpha=0.7) + 
-  #   geom_bar(data=nrh.cn %>% filter(`Parent Activity Type`=="Adult Capture", grepl("Swim Ins", `Inventory Lot`)) %>% 
-  #              group_by(`Activity Start Date`) %>% summarize(n=sum(`Total Count`)),
-  #            aes(x=as.Date(`Activity Start Date`), y=n*1), fill="black", stat="identity", alpha=0.7) +
-  #   scale_y_continuous(sec.axis = sec_axis(~./1, name="Swim ins")) +
-  #   scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
-  #   labs(x="", y="Expanded adult Chinook", fill="Segment", colour="Segment") +
-  #   theme_bw() +
-  #   theme(axis.text.x = element_text(angle=45, hjust=1)),
-  
   ggplot() +
     geom_bar(data=nit.sil %>% filter(species=="Chinook") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
                summarize(Spawning=sum(`adults # spawning`),
-                         Holding = sum(`adults # holding`)) %>% pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
+                         Holding = sum(`adults # holding`)) %>% 
+               pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
              aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
              stat="identity", position="stack", alpha=0.7, size=1) +
     geom_bar(data=nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot)) %>% 
@@ -1287,74 +1357,6 @@ Figure: Expanded live adult Chinook (bars) and carcasses (black line). Bar fill 
 Figure: Expanded adult Chinook counts (large bars) and swim-ins (narrow black bars). Adult bar fill colours indicate behaviour (spawning=gray, holding=white), bar line colour indicates river segment (lower=pink, upper=blue).
 
 <br>
-
-<br>
-
-## Infilling missing segment (2023)
-
-<br> 
-
-On Oct 5 the section 5-4 (Eagle Pool) was not swum due to bears - a bank wank and approximation from a distance occurred. 
-
-```{r}
-ggarrange(
-  ggplot() +
-    geom_bar(data=nit.sil %>%
-               filter(species%notin%c("Steelhead", "Cutthroat Trout")) %>%
-               mutate(group = case_when(segment=="5-4" ~ "5-4",
-                                        TRUE ~ "other")) %>%
-               group_by(date, group, species) %>%
-               summarize(total_adults = sum(`adults live`)),
-             aes(x=as.Date(date), y=total_adults, fill=group, colour=group), stat="identity") +
-    geom_bar(data=nit.sil %>% 
-               filter(species%notin%c("Steelhead", "Cutthroat Trout")) %>% 
-               mutate(group = case_when(segment=="5-4" ~ "5-4",
-                                        TRUE ~ "other")) %>%
-               group_by(date, species) %>% 
-               summarize(total_adults = sum(`adults live`)) %>%
-               filter(date==as.Date("2023-10-05")),
-             aes(x=as.Date(date), y=total_adults), stat="identity", fill="transparent", colour="black", width=5) +
-    scale_x_date(breaks="5 day", date_labels="%b %d") +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle=45, hjust=1)) +
-    facet_wrap(~species),
-  
-  
-  
-  ggplot() +
-    geom_bar(data=nit.sil %>% 
-               filter(species%notin%c("Steelhead", "Cutthroat Trout")) %>% 
-               mutate(group = case_when(segment=="5-4" ~ "5-4",
-                                        TRUE ~ "other")) %>%
-               group_by(date, group, species) %>% 
-               summarize(total_adults = sum(`adults live`)) %>% 
-               group_by(date, species) %>% 
-               mutate(perc = total_adults/sum(total_adults)),
-             aes(x=as.Date(date), y=perc, fill=group, colour=group), stat="identity") +
-    geom_bar(data=nit.sil %>% 
-               filter(species%notin%c("Steelhead", "Cutthroat Trout")) %>% 
-               mutate(group = case_when(segment=="5-4" ~ "5-4",
-                                        TRUE ~ "other")) %>%
-               group_by(date, group, species) %>% 
-               summarize(total_adults = sum(`adults live`)) %>% 
-               group_by(date, species) %>% 
-               mutate(perc = total_adults/sum(total_adults)) %>% 
-               filter(date==as.Date("2023-10-05")),
-             aes(x=as.Date(date), y=perc), stat="identity", fill="transparent", colour="black", width=5) +
-    scale_x_date(breaks="5 day", date_labels="%b %d") +
-    scale_y_continuous(breaks=seq(0,1,by=0.1)) +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle=45, hjust=1)) +
-    facet_wrap(~species),
-  
-  nrow=1, common.legend = T)
-```
-
-Figure: Number and proportion of counts in segment 5-4 (pink) compared to the other segments (blue). 
-
-<br>
-
-Recommend applying 95% pop to chinook and chum and 90% to coho. 
 
 <br>
 
