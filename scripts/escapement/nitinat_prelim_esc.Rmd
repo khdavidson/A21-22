@@ -716,14 +716,14 @@ ggplot() +
   theme_bw()
 ```
 
-Figure: AUC curvey for Nitinat mainstem Sockeye. Note in 2023 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
+Figure: AUC curvey for Nitinat mainstem Coho. Note in 2023 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
 
 <br>
 
 <br>
 
 
-## Area 21-22 preliminary escapement estimate (AUC/PL+D) 
+## Area 21-22 preliminary escapement estimates (AUC/PL+D) 
 
 <br>
 
@@ -1025,64 +1025,24 @@ ggplot() +
   theme_bw()
 ```
 
-Figure: AUC curvey for Nitinat mainstem Sockeye. Note in 2023 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
+Figure: AUC curvey for Nitinat mainstem Chum.  
 
 <br>
 
 <br>
 
-## Preliminary escapement estimate (AUC) 
+## Area 21-22 preliminary escapement estimates (AUC) 
 
 <br>
 
-Table: Raw chum counts
+Table: Raw swim data (raw and expanded live and dead) for Chum.
 
 ```{r}
-ver23 %>% 
+AUCdataTable %>% 
   filter(ShortSpecies=="CM") %>% 
-  select(-c(FabricatedZero)) %>% 
+  select(ShortSpecies,Section_AreaInspected, SDate, WaterTemperature, WaterClarity, LiveAdults, DeadAdults,LiveJacks,DeadJacks, ExpLiveAdults,
+         ExpDeadAdults, ExpLiveJacks, ExpDeadJacks, OverallReliability, EstPctSeen) %>% 
   mutate(across(c(LiveAdults:ExpDeadJacks), ~round(., 0))) %>% 
-  kbl(align="c") %>%
-  kable_paper("hover", full_width=T, position = "center") %>%
-  collapse_rows(columns=c(1:4), valign="middle", target=1)
-```
-
-<br>
-
-```{r}
-ggarrange(
-ggplot() +
-  geom_line(data=AUC23%>%filter(estMethod=="with heli", species=="Chum"), aes(x=as.Date(Date), y=ExpAdultFishDays)) +
-  geom_point(data=AUC23%>%filter(estMethod=="with heli", species=="Chum"), 
-             aes(x=as.Date(Date), y=ExpAdultFishDays, fill=surveyMethod, colour=surveyMethod), shape=21, size=4) +
-  scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-  scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-  labs(x="", y="Fish-days", fill="", colour="") +
-  theme_bw(),
-
-ggplot() +
-  geom_line(data=AUC23%>%filter(estMethod=="without heli", species=="Chum"), aes(x=as.Date(Date), y=ExpAdultFishDays)) +
-  geom_point(data=AUC23%>%filter(estMethod=="without heli", species=="Chum"), 
-             aes(x=as.Date(Date), y=ExpAdultFishDays, fill=surveyMethod, colour=surveyMethod), shape=21, size=4) +
-  scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-  scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-  labs(x="", y="Fish-days", fill="", colour="") +
-  theme_bw(),
-nrow=2,
-common.legend = T, legend = "bottom"
-)
-```
-
-Figure: AUC curves with heli (top) and without heli (bottom) survey. 
-
-<br>
-
-Table: AUC math (SIL+AUC database math extracted: SIL+AUC_database_output_2024-01-03 - AUC.xlsx)
-
-```{r}
-AUC23 %>% 
-  filter(species=="Chum") %>% 
-  relocate(surveyMethod, .before=Date) %>% 
   kbl(align="c") %>%
   kable_paper("hover", full_width=T, position = "center") %>%
   collapse_rows(columns=c(1:4), valign="middle", target=1) 
@@ -1090,49 +1050,17 @@ AUC23 %>%
 
 <br>
 
-Table: Escapement estimates with/without helicopter survey for each survey life value.
+Table: Escapement estimates for each system.   
 
 ```{r}
-# auc23 %>% 
-#   filter(species=="chum") %>%
-#   group_by(method) %>% 
-#   summarize(fish_days_SL8 = round(sum(`expanded adult`)/8,0),
-#             fish_days_SL10 = round(sum(`expanded adult`)/10,0),
-#             fish_days_SL15 = round(sum(`expanded adult`)/15,0)) %>% 
-#   pivot_longer(cols=c(fish_days_SL8:fish_days_SL15), names_to = "Rank", values_to="Estimate") %>% 
-#   mutate(Rank = case_when(grepl("8", Rank) ~ "Low Value",
-#                            grepl("10", Rank) ~ "Middle Value",
-#                            grepl("15", Rank) ~ "High Value"),
-#          SL = case_when(grepl("Low", Rank) ~ 8,
-#                         grepl("Middle", Rank) ~ 10,
-#                         grepl("High", Rank) ~ 15),
-#          Est_without_swimins = 
-#            Estimate - 
-#            nrh.cm %>% 
-#               summarize(n=sum(TotalCount)) %>%
-#               pull(n)
-#            ) %>%
-#   relocate(SL, .after = Rank) %>%
-#   kbl(align="c") %>%
-#   kable_paper("hover", full_width=T, position = "center") %>%
-#   collapse_rows(columns=c(1:4), valign="middle", target=1) 
-
-AUC23 %>% 
-  filter(species=="Chum") %>%
-  select(-c(species)) %>%
-  group_by(estMethod) %>% 
-  summarize(fishDays = sum(ExpAdultFishDays),
-            est_SLL = round(fishDays/10,0),
-            est_SLM = round(fishDays/15,0),
-            est_SLH = round(fishDays/20,0)) %>% 
-  pivot_longer(cols=c(est_SLL:est_SLH), names_to = "Rank", values_to="Estimate") %>% 
-  mutate(Rank = case_when(grepl("SLL", Rank) ~ "Low Value",
-                           grepl("SLM", Rank) ~ "Middle Value",
-                           grepl("SLH", Rank) ~ "High Value"),
-         SL = case_when(grepl("Low", Rank) ~ 10,
-                        grepl("Middle", Rank) ~ 15,
-                        grepl("High", Rank) ~ 20)) %>%
-  relocate(SL, .after = Rank) %>%
+escEstSpp %>% 
+  filter(ShortSpecies=="CM", AREA!="20") %>% 
+  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, contains("Raw"), contains("FishDays"))) %>% 
+  relocate(c(SystemName, AREA), .before=ShortSpecies) %>% 
+  rename(FinalAdultEstimate = AdultNaturalReco,
+         FinalJackEstimate = JackNaturalReco) %>% 
+  mutate(across(FinalJackEstimate:FinalAdultEstimate, ~case_when(.<0 ~ 0,
+                                                                 TRUE ~ .))) %>%
   kbl(align="c") %>%
   kable_paper("hover", full_width=T, position = "center") %>%
   collapse_rows(columns=c(1:4), valign="middle", target=1) 
@@ -1142,7 +1070,7 @@ AUC23 %>%
 
 ### Estimate decision:
 
-For 2023 used AUC with SL=11.5 days (mid value) to give exapnded estimate of 27,530. Swim-ins need to be SUBTRACTED from this to account for fish that were likely double-counted: the peak live count occurred on the full system heli survey and therefore likely counted chum that later swam into the hatchery (see swim-in graph above). Subtracting the swim-ins for accounting (6186) leaves 21,344 chum.
+For 2023 used AUC with SL=11.5 days (mid value) to give expanded estimate of 27,530. Swim-ins need to be SUBTRACTED from this to account for fish that were likely double-counted: the peak live count occurred on the full system heli survey and therefore likely counted chum that later swam into the hatchery (see swim-in graph above). Subtracting the swim-ins for accounting (6186) leaves 21,344 chum.
 
 <br>
 
@@ -1164,6 +1092,8 @@ ggplot() +
         legend.box = "horizontal")
 ```
 
+Figure: Raw swim counts (blue) from this year compared to historical raw swim counts. Stat weeks indicate the month (8=August, 12=December) and week of momth (1=first week, 2=2nd week, etc.), e.g., 81=First week of August, 91=First week of September, etc. 
+
 <br>
 
 ```{r}
@@ -1172,14 +1102,17 @@ ggplot()  +
            aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
   geom_bar(data=nit.esc %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CM"), 
            aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
-  geom_bar(aes(x=analysis_year, y=30000), stat="identity", colour="orange", fill="orange", alpha=0.8) +   
-  scale_x_continuous(breaks=seq(min(nit.esc$`Analysis Year`), analysis_year, by=2)) +
+  geom_bar(data=escEstSpp %>% 
+             filter(ShortSpecies=="CM", AREA!="20", grepl("Nitinat", SystemName)) %>% 
+             select(Year, SystemName, AdultNaturalReco) %>% 
+             summarize(n=sum(AdultNaturalReco)), 
+             aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   scale_x_continuous(breaks=seq(min(nit.esc$`Analysis Year`), analysis_year, by=2)) +
   labs(x="Return Year", y="Chum spawners") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
 
-Figure: 2023 preliminary adult Chum escapement estimate (orange) relative to historical adult (blue) and unspecified (gray) escapement estimates. There was no Chum estimate available in 1990. 
+Figure: 2023 preliminary adult Chum escapement estimate (red outline) relative to historical adult (blue) and unspecified (gray) escapement estimates. There was no Chum estimate available in 1990. 
 
 <br>
 
