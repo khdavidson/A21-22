@@ -840,18 +840,24 @@ Six snorkel surveys and one helicopter survey were conducted for Chum in 2023. T
 
 <br>
 
-## Raw vs expanded counts
+## Area 21-22 raw vs expanded counts
 
 Counts are expanded for both % population surveyed and/or observer efficiency, depending on survey conditions.  
 
 ```{r}
 ggplot() +
-  geom_bar(data=ver23 %>% filter(ShortSpecies=="CM") %>% pivot_longer(LiveAdults:ExpDeadJacks, names_to="est_type", values_to="n") %>% filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
-           aes(x=as.Date(Date), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
-  labs(x="", y="Adult Chum counts", fill="Expansion", colour="Expansion") +
+  geom_bar(data=AUCdataTable %>% 
+             filter(ShortSpecies=="CM") %>% 
+             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
+             filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
+           aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
+  labs(x="", y="Adult Coho counts", fill="Expansion", colour="Expansion") +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
+  #scale_y_continuous(limits=c(0, max(AUCdataTable[AUCdataTable$ShortSpecies=="CO",]$ExpLiveAdults,na.rm=T))) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle=45, hjust=1))
+  theme(axis.text.x = element_text(angle=45, hjust=1),
+        legend.position = "bottom") +
+  facet_wrap(~Section_AreaInspected, scales="free_y")
 ```
 
 Figure: Live Adult Chum raw counts (blue) and counts expanded for % population and/or OE (pink).
@@ -868,12 +874,10 @@ ggplot() +
             aes(x=as.Date(date), y=mean*5000), colour="dodger blue") +
   geom_bar(data=nit.sil %>% filter(species=="Chum") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
              summarize(n=sum(`adults live / habitat seen (# Est Live)`)), 
-           aes(x=as.Date(date), y=n, group=type, fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
+           aes(x=as.Date(date), y=n, group=type, 
+               fill=`upper/lower (for Nitinat River only)`, 
+               colour=`upper/lower (for Nitinat River only)`), 
            stat="identity", position="stack", alpha=0.7) +
-  # geom_line(data=nit.sil %>% filter(species=="Chum") %>% group_by(date) %>% 
-  #             summarize(n=sum(`adults dead`)), 
-  #           aes(x=as.Date(date), y=n), 
-  #           stat="identity", position="stack") +
   scale_y_continuous(sec.axis = sec_axis(~./5000, name="Staff gauge (m)")) +
   scale_x_date(date_breaks="7 day", date_labels="%b %d") +
   labs(x="", y="Expanded adult Chum", fill="Segment", colour="Segment") +
@@ -890,28 +894,11 @@ Figure: Chinook counts (expanded adults) and water levels (blue line)
 ## Behaviour & carcasses
 
 ```{r}
-  # ggplot() +
-  #   geom_bar(data=nit.sil %>% filter(species=="Chum") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
-  #              summarize(n=sum(`adults live / habitat seen (# Est Live)`)), 
-  #            aes(x=as.Date(date), y=n, fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
-  #            stat="identity", position="stack", alpha=0.7) +
-  #   geom_point(data=nit.sil %>% filter(species=="Chum") %>% group_by(date) %>% 
-  #                summarize(n=sum(`adults dead`)), 
-  #              aes(x=as.Date(date), y=n*10), size=2, alpha=0.5) +
-  #   geom_line(data=nit.sil %>% filter(species=="Chum") %>% group_by(date) %>% 
-  #               summarize(n=sum(`adults dead`)), 
-  #             aes(x=as.Date(date), y=n*10), 
-  #             stat="identity", position="stack") +
-  #   scale_y_continuous(sec.axis = sec_axis(~./10, name="Carcasses")) +
-  #   scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
-  #   labs(x="", y="Expanded live adult Chum", fill="Segment", colour="Segment") +
-  #   theme_bw() +
-  #   theme(axis.text.x = element_text(angle=45, hjust=1)),
-  
   ggplot() +
     geom_bar(data=nit.sil %>% filter(species=="Chum") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
                summarize(Spawning=sum(`adults # spawning`),
-                         Holding = sum(`adults # holding`)) %>% pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
+                         Holding = sum(`adults # holding`)) %>% 
+               pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
              aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
              stat="identity", position="stack", alpha=0.7, size=1) +
     geom_point(data=nit.sil %>% filter(species=="Chum") %>% group_by(date) %>% 
@@ -939,23 +926,11 @@ Figure: Expanded live adult Chum (bars) and carcasses (black line). Bar fill ind
 ## Snorkel & swim-in counts
 
 ```{r}
-  # ggplot() +
-  #   geom_bar(data=nit.sil %>% filter(species=="Chum") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
-  #              summarize(n=sum(`adults live / habitat seen (# Est Live)`)), 
-  #            aes(x=as.Date(date), y=n, group=type, fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
-  #            stat="identity", position="stack", alpha=0.7) + 
-  #   geom_bar(data=nrh.cm, 
-  #            aes(x=as.Date(`Start Date`), y=`Total Count`*5), fill="black", stat="identity", alpha=0.7) +
-  #   scale_y_continuous(sec.axis = sec_axis(~./5, name="Swim ins")) +
-  #   scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
-  #   labs(x="", y="Expanded adult Chum", fill="Segment", colour="Segment") +
-  #   theme_bw() +
-  #   theme(axis.text.x = element_text(angle=45, hjust=1)),
-  
   ggplot() +
     geom_bar(data=nit.sil %>% filter(species=="Chum") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
                summarize(Spawning=sum(`adults # spawning`),
-                         Holding = sum(`adults # holding`)) %>% pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
+                         Holding = sum(`adults # holding`)) %>% 
+               pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
              aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
              stat="identity", position="stack", alpha=0.7, size=1) +
     geom_bar(data=nrh.cm,
@@ -969,6 +944,88 @@ Figure: Expanded live adult Chum (bars) and carcasses (black line). Bar fill ind
 ```
 
 Figure: Expanded adult Chum counts (large bars) and swim-ins (narrow black bars). Adult bar fill colours indicate behaviour (spawning=gray, holding=white), bar line colour indicates river segment (lower=pink, upper=blue).
+
+<br>
+
+<br>
+
+## Tributaries (River and Lake)
+
+Live chum were present in Campus and Hobiton Creek in 2023, and dead chum were noted in NoName Creek. Opportunistic surveys of Caycuse and Doobah found no chum. 
+
+```{r}
+tribs.sil %>% 
+  filter(species=="Chum") %>% 
+  group_by(system) %>% 
+  summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`),
+            dead_adults = sum(`adults dead`)) %>%
+  mutate(across(c(exp_ad_live:dead_adults), ~round(., 0))) %>%
+  kbl(align="c") %>%
+  kable_paper("hover", full_width=T, position = "center") %>%
+  collapse_rows(columns=c(1), valign="middle", target=1) 
+```
+
+<br>
+
+```{r}
+ggplot() +
+  geom_bar(data=nit.sil %>% 
+             filter(species=="Chum") %>% 
+             group_by(surveyNum, date, system) %>% 
+             summarize(Spawning=sum(`adults # spawning`),
+                       Holding = sum(`adults # holding`)) %>% 
+             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
+           aes(x=as.Date(date), y=count, fill=behaviour, colour=system), 
+           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
+  geom_bar(data = tribs.sil %>% 
+             filter(species=="Chum", trib_status=="Nitinat trib") %>% 
+             group_by(system, date) %>% 
+             summarize(Spawning=sum(`adults # spawning`),
+                       Holding = sum(`adults # holding`)) %>% 
+             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
+           aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
+  scale_y_continuous(sec.axis = sec_axis(~./1, name="Trib count")) +
+  scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
+  labs(x="", y="mainstem count") +
+  theme_bw()
+```
+
+Figure: Mainstem Nitinat (pink) and trib (blue/green) counts for Chum adults (raw).  
+
+<br>
+
+<br>
+
+## AUC assessments
+
+<br>
+
+The information below is meant to assist with determining if AUC is an appropriate method, and whether to include/exclude certain surveys. 
+
+<br>
+
+Table: AUC math for systems receiving AUC estimate in `r analysis_year`
+
+```{r}
+escEstAUC %>%
+  filter(AREA!="20", ShortSpecies=="CM", grepl("Nitinat", SystemName)) 
+```
+
+<br>
+
+```{r}
+ggplot() +
+  geom_line(data=escEstAUC%>%filter(ShortSpecies=="CM", AREA!="20", grepl("Nitinat", SystemName)), 
+            aes(x=as.Date(DateRange), y=ExpAdultFishDays)) +
+  geom_point(data=escEstAUC%>%filter(ShortSpecies=="CM", AREA!="20", grepl("Nitinat", SystemName)), 
+             aes(x=as.Date(DateRange), y=ExpAdultFishDays, fill=method, colour=method), shape=21, size=4) +
+  scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  labs(x="", y="Fish-days", fill="Survey method", colour="Survey method") +
+  theme_bw()
+```
+
+Figure: AUC curvey for Nitinat mainstem Sockeye. Note in 2023 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
 
 <br>
 
@@ -1086,26 +1143,6 @@ AUC23 %>%
 ### Estimate decision:
 
 For 2023 used AUC with SL=11.5 days (mid value) to give exapnded estimate of 27,530. Swim-ins need to be SUBTRACTED from this to account for fish that were likely double-counted: the peak live count occurred on the full system heli survey and therefore likely counted chum that later swam into the hatchery (see swim-in graph above). Subtracting the swim-ins for accounting (6186) leaves 21,344 chum.
-
-<br>
-
-<br>
-
-## Tributaries
-
-Live chum were present in Campus and Hobiton Creek in 2023, and dead chum were noted in NoName Creek. Opportunistic surveys of Caycuse and Doobah found no chum. 
-
-```{r}
-tribs.sil %>% 
-  filter(species=="Chum") %>% 
-  group_by(system) %>% 
-  summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`),
-            dead_adults = sum(`adults dead`)) %>%
-  mutate(across(c(exp_ad_live:dead_adults), ~round(., 0))) %>%
-  kbl(align="c") %>%
-  kable_paper("hover", full_width=T, position = "center") %>%
-  collapse_rows(columns=c(1), valign="middle", target=1) 
-```
 
 <br>
 
