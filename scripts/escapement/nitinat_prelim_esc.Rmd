@@ -41,17 +41,88 @@ analysis_year <- 2023
 OD.dir <- paste("C:/Users", Sys.info()[6], "OneDrive - DFO-MPO/# Escapement Estimates/# 2023/Area 21-22/", sep="/")
 
 
-# raw SILS ----------------------------
-nit.sil <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_2023.xlsx", sheet="Nitinat River raw SIL entry", guess_max=20000)
+# Raw SIL DATA ----------------------------
 
-auc23 <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_2023.xlsx", sheet="AUC_R", guess_max=20000)
+# Raw SIL entry for Nitinat lower/mid/upper designations compared to water level etc: 
+nit.sil <- list.files(paste0("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/",
+                             analysis_year,
+                             "/SILs/Area 21-22/Nitinat River/"),
+                      pattern = "^A22_Nitinat_River*.*xlsx", full.names = T) %>% 
+  map(~readxl::read_excel(path=.x, trim_ws=T, guess_max=20000, sheet="Nitinat River raw SIL entry"), id="path") %>% 
+  list_rbind() %>% 
+  print()
+  
 
-tribs.sil <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/2023/SILs/Area 21-22/Tribs/A22_Tributaries_2023.xlsx", sheet="Tributaries Raw SIL entry", guess_max=20000)
+# Raw SIL entry for Tribs compared to water level etc: 
+tribs.sil <- list.files(paste0("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/",
+                             analysis_year,
+                             "/SILs/Area 21-22/Tribs/"),
+                      pattern = "^A22_Tributaries*.*xlsx", full.names = T) %>% 
+  map(~readxl::read_excel(path=.x, trim_ws=T, guess_max=20000, sheet="Tributaries Raw SIL entry"), id="path") %>% 
+  list_rbind() %>% 
+  print()
+
+
+
+
+# SIL+AUC DATABASE DATA ----------------------------
+
+# SIL+AUC DB TABLE: Waterbody values (to join to EscEStSppHeader table):
+wbdyVals <- readxl::read_excel(path=here("data", "escapement", "prelim-inseason", "WaterbodiesValues.xlsx")) %>% 
+  mutate(AREA = case_when(NAME=="TUCK LAKE" ~ "22",
+                          TRUE ~ AREA)) %>%
+  select(AREA, NAME, WATERSHED_CDE) %>% 
+  rename(WatershedCode = WATERSHED_CDE) %>% 
+  filter(!is.na(WatershedCode)) %>% 
+  group_by(AREA, NAME, WatershedCode) %>% 
+  filter(AREA %in% c(20,21,22)) %>% 
+  group_by(WatershedCode) %>% 
+  mutate(n=n(),
+         system = case_when(n>1 ~ paste0("system", seq(1,length(n),by=1)),
+                            n==1 ~ "system1")) %>% 
+  group_by(WatershedCode) %>% 
+  pivot_wider(names_from=system, values_from=NAME) %>% 
+  #select(-n) %>% 
+  unite("SystemName", system1:system3, sep=", ", remove=T, na.rm=T) %>% 
+  mutate(SystemName = str_to_title(SystemName)) %>%
+  print()
+
+
+
+# SIL+AUC DB TABLE: AUC Data Table for analysis: 
+AUCdataTable <- readxl::read_excel(path=here("data", "escapement", "prelim-inseason", "AUC_DataAnalysisTable_area21-22.xlsx"))
+
+
+
+# SIL+AUC DB TABLE: EscEstSppHeader table:
+escEstSpp <- readxl::read_excel(path=here("data", "escapement", "prelim-inseason", "EscEstSppHeader_area20-22.xlsx")) %>% 
+  left_join(.,
+            wbdyVals,
+            na_matches="never", relationship="many-to-one") %>%
+  mutate(AdultMidResidenceTime_R = round((AdultShortResidenceTime + AdultLongResidenceTime)/2,1),
+         JackMidResidenceTime_R = round((JackShortResidenceTime + JackLongResidenceTime)/2,1),
+         AdultExpAUCMidValue_R = round(AdultExpAUCSumOfFishDays/AdultMidResidenceTime_R,0),
+         JackExpAUCMidValue_R = round(JackExpAUCSumOfFishDays/JackMidResidenceTime_R,0)) %>% 
+  relocate(AdultMidResidenceTime_R, .before = AdultLongResidenceTime) %>%
+  relocate(JackMidResidenceTime_R, .before = JackLongResidenceTime) %>% 
+  relocate(AdultExpAUCMidValue_R, .before=AdultExpAUCHighValue) %>% 
+  relocate(JackExpAUCMidValue_R, .before=JackExpAUCHighValue) 
+
+
+# SIL+AUC DB TABLE: EscEstAUCResults table: 
+escEstAUC <- readxl::read_excel(path=here("data", "escapement", "prelim-inseason", "EscEstAUCResults_area20-22.xlsx")) %>% 
+  left_join(.,
+            wbdyVals,
+            na_matches="never", relationship="many-to-one") %>% 
+  mutate(method = case_when(DateRange== "2023/10/12 - 2023/10/26" ~ "heli",
+                            TRUE ~ "snorkel"))
+
 
 
 # SIL+AUC database ----------------------------
-ver23 <- readxl::read_excel(path=paste0(OD.dir, "Area22_SIL+AUC_database_output_2024-01-05 - AUC.xlsx"), sheet="raw")
-AUC23 <- readxl::read_excel(path=paste0(OD.dir, "Area22_SIL+AUC_database_output_2024-01-05 - AUC.xlsx"), sheet="AUC")
+#ver23 <- readxl::read_excel(path=paste0(OD.dir, "Area22_SIL+AUC_database_output_2024-01-05 - AUC.xlsx"), sheet="raw")
+#AUC23 <- readxl::read_excel(path=paste0(OD.dir, "Area22_SIL+AUC_database_output_2024-01-05 - AUC.xlsx"), sheet="AUC")
+
 
 
 # Hatchery ----------------------------
@@ -119,6 +190,14 @@ nit.esc.goal <- read.csv(here("data", "escapement", "wcviCK-BootstrappedRPs.csv"
 
 <br>
 
+
+
+
+
+
+
+
+
 # **Sockeye**            
  
 <br>
@@ -127,18 +206,32 @@ Snorkel and heli surveys were primarily timed for Chinook and Chum. Sockeye coun
 
 <br>
 
-## Raw vs expanded counts
+## Area 21-22 raw vs expanded counts
 
 Counts are expanded for both % population surveyed and/or observer efficiency, depending on survey conditions.  
 
 ```{r}
+# ggplot() +
+#   geom_bar(data=ver23 %>% filter(ShortSpecies=="SK") %>% pivot_longer(LiveAdults:ExpDeadJacks, names_to="est_type", values_to="n") %>% filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
+#            aes(x=as.Date(Date), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
+#   labs(x="", y="Adult Sockeye counts", fill="Expansion", colour="Expansion") +
+#   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
+#   theme_bw() +
+#   theme(axis.text.x = element_text(angle=45, hjust=1))
+
 ggplot() +
-  geom_bar(data=ver23 %>% filter(ShortSpecies=="SK") %>% pivot_longer(LiveAdults:ExpDeadJacks, names_to="est_type", values_to="n") %>% filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
-           aes(x=as.Date(Date), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
+  geom_bar(data=AUCdataTable %>% 
+             filter(ShortSpecies=="SK") %>% 
+             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
+             filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
+           aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
   labs(x="", y="Adult Sockeye counts", fill="Expansion", colour="Expansion") +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
+  scale_y_continuous(limits=c(0, max(AUCdataTable[AUCdataTable$ShortSpecies=="SK",]$ExpLiveAdults,na.rm=T))) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle=45, hjust=1))
+  theme(axis.text.x = element_text(angle=45, hjust=1),
+        legend.position = "bottom") +
+  facet_wrap(~Section_AreaInspected, scales="free_y")
 ```
 
 Figure: Live Adult sockeye raw counts (blue) and counts expanded for % population and/or OE (pink). 
@@ -216,7 +309,7 @@ Only about 2-3% of the total SK counts were above the log jam.
 ```
 <br>
 
-Figure: Top: Expanded live Sockeye (bars) and carcasses (black line). Bottom: Spawning (gray bars) and holding (white bars) adult Sockeye and carcasses (black line). 
+Figure: Top: Expanded live Sockeye (bars) and carcasses (black line) in the Nitinat mainstem. Bottom: Spawning (gray bars) and holding (white bars) adult Sockeye and carcasses (black line). 
 
 <br>
 
@@ -230,58 +323,7 @@ There are no swim-ins for Nitinat sockeye as they are not enhanced.
 
 <br>
 
-## Preliminary escapement estimate (AUC/PL+D) 
-
-<br>
-
-Table: Raw Sockeye counts
-
-```{r}
-ver23 %>% 
-  filter(ShortSpecies=="SK") %>% 
-  mutate(across(c(LiveAdults:ExpDeadJacks), ~round(., 0))) %>% 
-  kbl(align="c") %>%
-  kable_paper("hover", full_width=T, position = "center") %>%
-  collapse_rows(columns=c(1:4), valign="middle", target=1) 
-```
-
-<br>
-
-```{r}
-ggplot() +
-  geom_line(data=AUC23%>%filter(species=="Sockeye"), aes(x=as.Date(Date), y=ExpAdultFishDays)) +
-  geom_point(data=AUC23%>%filter(species=="Sockeye"), aes(x=as.Date(Date), y=ExpAdultFishDays), shape=21, size=4, fill="blue") +
-  labs(x="", y="Fish-days", fill="", colour="") +
-  theme_bw()
-```
-
-Figure: AUC curve for Sockeye
-
-<br>
-
-Table: AUC math (SIL+AUC database math extracted: SIL+AUC_database_output_2024-01-03 - AUC.xlsx)
-
-```{r}
-AUC23 %>% 
-  filter(species=="Sockeye") %>% 
-  kbl(align="c") %>%
-  kable_paper("hover", full_width=T, position = "center") %>%
-  collapse_rows(columns=c(1:4), valign="middle", target=1) 
-```
-
-<br>
-
-<br>
-
-### Estimate decision:
-
-For 2023 used an AUC estimate with SL=35 days. Low water was a migration barrier and likely meant sockeye were much more visible to surveyors later in the season than usual (they were prevented from migrating further upstream to Parker Creek); therefore 2023 estimate may be much higher relative to previous years. Expanded escapement estimate with 35 day survey life is 509 adults + 10 jacks (519 total). Type-4 estimate due to frequent surveys, but slightly wrong time of year. Heli survey excluded. See Chinook section for commentary about expansions for omission of Reach 5-4 on Oct 5 survey due to bear activity.  *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
-
-<br>
-
-<br>
-
-## Tributaries
+## Tributaries (River and Lake)
 
 Sockeye were present in Hobiton and Campus Creeks in 2023, but the primary enumeration method is by NTC and DFN echosounder. 
 Hobiton was swum once late May due to delays in the echosounder installation, and again in late August during drought conditions to assess whether pre-spawn mortalities were occurring in the creek. Only one pre-spawn jack was noted, the remaining dead were too deep or too decomposed to assess mortality. 
@@ -302,6 +344,116 @@ tribs.sil %>%
 
 <br>
 
+```{r}
+ggplot() +
+  geom_bar(data=nit.sil %>% 
+             filter(species=="Sockeye") %>% 
+             group_by(surveyNum, date, system) %>% 
+             summarize(Spawning=sum(`adults # spawning`),
+                       Holding = sum(`adults # holding`)) %>% 
+             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
+           aes(x=as.Date(date), y=count, fill=behaviour, colour=system), 
+           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
+  geom_bar(data = tribs.sil %>% 
+             filter(species=="Sockeye", trib_status=="Nitinat trib") %>% 
+             group_by(system, date) %>% 
+             summarize(Spawning=sum(`adults # spawning`),
+                       Holding = sum(`adults # holding`)) %>% 
+             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
+           aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
+  scale_y_continuous(sec.axis = sec_axis(~./1, name="Trib count")) +
+  scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
+  labs(x="", y="mainstem count") +
+  theme_bw()
+```
+
+Figure: Mainstem Nitinat (pink) and trib (blue) counts for Sockeye adults (raw).  
+
+<br>
+
+<br>
+
+## AUC assessments
+
+<br>
+
+The information below is meant to assist with determining if AUC is an appropriate method, and whether to include/exclude certain surveys. 
+
+<br>
+
+Table: AUC math for systems receiving AUC estimate in `r analysis_year`
+
+```{r}
+escEstAUC %>%
+  filter(AREA!="20", ShortSpecies=="SK", grepl("Nitinat", SystemName)) 
+```
+
+<br>
+
+```{r}
+ggplot() +
+  geom_line(data=escEstAUC%>%filter(ShortSpecies=="SK", AREA!="20", grepl("Nitinat", SystemName)), 
+            aes(x=as.Date(DateRange), y=ExpAdultFishDays)) +
+  geom_point(data=escEstAUC%>%filter(ShortSpecies=="SK", AREA!="20", grepl("Nitinat", SystemName)), 
+             aes(x=as.Date(DateRange), y=ExpAdultFishDays, fill=method, colour=method), shape=21, size=4) +
+  scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  labs(x="", y="Fish-days", fill="Survey method", colour="Survey method") +
+  theme_bw()
+```
+
+Figure: AUC curvey for Nitinat mainstem Sockeye. Note in 2023 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
+
+<br>
+
+<br>
+
+## Area 21-22 preliminary escapement estimates (AUC/PL+D) 
+
+<br>
+
+Table: San Juan raw swim data (raw and expanded live and dead) for Sockeye.  
+
+```{r}
+AUCdataTable %>% 
+  filter(ShortSpecies=="SK") %>% 
+  select(ShortSpecies,Section_AreaInspected, SDate, WaterTemperature, WaterClarity, LiveAdults, DeadAdults,LiveJacks,DeadJacks, ExpLiveAdults,
+         ExpDeadAdults, ExpLiveJacks, ExpDeadJacks, OverallReliability, EstPctSeen) %>% 
+  mutate(across(c(LiveAdults:ExpDeadJacks), ~round(., 0))) %>% 
+  kbl(align="c") %>%
+  kable_paper("hover", full_width=T, position = "center") %>%
+  collapse_rows(columns=c(1:4), valign="middle", target=1) 
+```
+
+
+<br>
+
+Table: Escapement estimates for each system. San Juan mainstem surveys were rolled up based on mid-point date for each of 3 complete survey events, and then the PL+D was selected based on the 3 survey events.  
+
+```{r}
+escEstSpp %>% 
+  filter(ShortSpecies=="SK", AREA!="20") %>% 
+  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, contains("Raw"), contains("FishDays"))) %>% 
+  relocate(c(SystemName, AREA), .before=ShortSpecies) %>% 
+  rename(FinalAdultEstimate = AdultNaturalReco,
+         FinalJackEstimate = JackNaturalReco) %>% 
+  mutate(across(FinalJackEstimate:FinalAdultEstimate, ~case_when(.<0 ~ 0,
+                                                                 TRUE ~ .))) %>%
+  kbl(align="c") %>%
+  kable_paper("hover", full_width=T, position = "center") %>%
+  collapse_rows(columns=c(1:4), valign="middle", target=1) 
+```
+
+<br>
+
+<br>
+
+### Estimate decision:
+
+For 2023 used an AUC estimate with SL=35 days. Low water was a migration barrier and likely meant sockeye were much more visible to surveyors later in the season than usual (they were prevented from migrating further upstream to Parker Creek); therefore 2023 estimate may be much higher relative to previous years. Expanded escapement estimate with 35 day survey life is 509 adults + 10 jacks (519 total). Type-4 estimate due to frequent surveys, but slightly wrong time of year. Heli survey excluded. See Chinook section for commentary about expansions for omission of Reach 5-4 on Oct 5 survey due to bear activity.  *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
+
+<br>
+
 <br>
 
 ## `r analysis_year` compared to historical run timing and abundance
@@ -316,6 +468,7 @@ ggplot()  +
            aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
   geom_bar(data=nit.esc %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="SEL"), 
            aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
+  
   geom_bar(aes(x=analysis_year, y=421), stat="identity", colour="orange", fill="orange", alpha=0.8) +   
   scale_x_continuous(breaks=seq(min(nit.esc$`Analysis Year`), analysis_year, by=2)) +
   labs(x="Return Year", y="Sockeye spawners") +
@@ -328,6 +481,7 @@ Figure: 2023 preliminary adult Sockeye escapement estimate (orange) relative to 
 <br>
 
 <br>
+
 
 
 
