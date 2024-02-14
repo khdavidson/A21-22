@@ -227,7 +227,7 @@ ggplot() +
            aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
   labs(x="", y="Adult Sockeye counts", fill="Expansion", colour="Expansion") +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
-  scale_y_continuous(limits=c(0, max(AUCdataTable[AUCdataTable$ShortSpecies=="SK",]$ExpLiveAdults,na.rm=T))) +
+  #scale_y_continuous(limits=c(0, max(AUCdataTable[AUCdataTable$ShortSpecies=="SK",]$ExpLiveAdults,na.rm=T))) +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1),
         legend.position = "bottom") +
@@ -517,18 +517,24 @@ Six snorkel surveys were conducted in 2023, but only the latter ones can be cons
 
 <br>
 
-## Raw vs expanded counts
+## Area 21-22 raw vs expanded counts
 
 Counts are expanded for both % population surveyed and/or observer efficiency, depending on survey conditions.  
 
 ```{r}
 ggplot() +
-  geom_bar(data=ver23 %>% filter(ShortSpecies=="CO") %>% pivot_longer(LiveAdults:ExpDeadJacks, names_to="est_type", values_to="n") %>% filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
-           aes(x=as.Date(Date), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
+  geom_bar(data=AUCdataTable %>% 
+             filter(ShortSpecies=="CO") %>% 
+             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
+             filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
+           aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
   labs(x="", y="Adult Coho counts", fill="Expansion", colour="Expansion") +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
+  #scale_y_continuous(limits=c(0, max(AUCdataTable[AUCdataTable$ShortSpecies=="CO",]$ExpLiveAdults,na.rm=T))) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle=45, hjust=1))
+  theme(axis.text.x = element_text(angle=45, hjust=1),
+        legend.position = "bottom") +
+  facet_wrap(~Section_AreaInspected, scales="free_y")
 ```
 
 Figure: Live Adult Coho raw counts (blue) and counts expanded for % population and/or OE (pink). 
@@ -634,6 +640,53 @@ Figure: Expanded adult Coho counts (large bars) and swim-ins (narrow black bars)
 
 <br>
 
+## Tributaries (River and Lake)
+
+Live Coho were present in Campus, NoName and Worthless Creeks in 2023.
+
+```{r}
+tribs.sil %>% 
+  filter(species=="Coho") %>% 
+  group_by(trib_status, system) %>% 
+  summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`),
+            dead_adults = sum(`adults dead`)) %>%
+  mutate(across(c(exp_ad_live:dead_adults), ~round(., 0))) %>%
+  kbl(align="c") %>%
+  kable_paper("hover", full_width=T, position = "center") %>%
+  collapse_rows(columns=c(1), valign="middle", target=1) 
+```
+
+Figure: Mainstem Nitinat (pink) and trib (blue) counts for Sockeye adults (raw).  
+
+<br>
+
+```{r}
+ggplot() +
+  geom_bar(data=nit.sil %>% 
+             filter(species=="Coho") %>% 
+             group_by(surveyNum, date, system) %>% 
+             summarize(Spawning=sum(`adults # spawning`),
+                       Holding = sum(`adults # holding`)) %>% 
+             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
+           aes(x=as.Date(date), y=count, fill=behaviour, colour=system), 
+           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
+  geom_bar(data = tribs.sil %>% 
+             filter(species=="Coho", trib_status=="Nitinat trib") %>% 
+             group_by(system, date) %>% 
+             summarize(Spawning=sum(`adults # spawning`),
+                       Holding = sum(`adults # holding`)) %>% 
+             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
+           aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
+  scale_y_continuous(sec.axis = sec_axis(~./1, name="Trib count")) +
+  scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
+  labs(x="", y="mainstem count") +
+  theme_bw()
+```
+
+<br>
+
+<br>
+
 ## Preliminary escapement estimate (AUC/PL+D) 
 
 <br>
@@ -706,26 +759,6 @@ AUC23 %>%
 ### Estimate decision:
 
 For 2023 estimate we went with PL+D as even the highest AUC estimate didn't cover the peak raw live count and timing/coverage wasn't great for AUC (no spawning observed). Expanded PL+D = 1364 adults + 154 jacks (1518 total). ADDED swim-ins due to survey timing relative to swim ins this year (see graph above - swim ins were already in the hatchery by the time the PL+D count happened): 1092 adult swim-ins and 58 jacks. With swim-ins added, final escapement estimate is tentatively  1364+1092 = 2456 adults + 212 jacks (2668 total). *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
-
-<br>
-
-<br>
-
-## Tributaries
-
-Live Coho were present in Campus, NoName and Worthless Creeks in 2023.
-
-```{r}
-tribs.sil %>% 
-  filter(species=="Coho") %>% 
-  group_by(system) %>% 
-  summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`),
-            dead_adults = sum(`adults dead`)) %>%
-  mutate(across(c(exp_ad_live:dead_adults), ~round(., 0))) %>%
-  kbl(align="c") %>%
-  kable_paper("hover", full_width=T, position = "center") %>%
-  collapse_rows(columns=c(1), valign="middle", target=1) 
-```
 
 <br>
 
