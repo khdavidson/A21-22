@@ -1,0 +1,342 @@
+---
+title: "Area 21/121 Fishery Summary"
+date: 'Last update: `r format(Sys.time(), sep="_", "%Y-%m-%d %H:%M")`'
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    toc_collapsed: false 
+    toc_depth: 5
+    number_sections: true
+---
+
+```{r setup, include=F}
+# title: "part3-fisheries-knitable"
+
+knitr::opts_chunk$set(echo=F,  message=F, warning=F)
+
+
+# Load libraries ------------------
+library(tidyverse)
+library(here)
+library(readxl)
+library(scales)
+library(plotly)
+library(bookdown)
+library(kableExtra)
+
+
+# Load helpers ------------------
+"%notin%" <- Negate("%in%")
+
+
+
+
+
+
+
+
+# ============================ Load data ============================
+
+# Biodata w results ----------------------
+crestBDWR <- readxl::read_excel(path=list.files(
+  path="//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/CHINOOK/WCVI_TERMINAL_RUN/Annual_data_summaries_for_RunRecons/CRESTcompile_base-files/2-Export-from-R/",
+                                           pattern="R_OUT - Biological_Data_With_Results*.*xlsx", full.names = T),
+                                   sheet="CREST Biodata Compiled") %>%
+  mutate(#`(R) Origin` = case_when(HATCHERY_ORIGIN=="Y" | PBT_BROOD_YEAR > 2000 ~ "Hatchery",
+        #                          THERMALMARK=="Not Marked" | is.na(PBT_BROOD_YEAR) | PBT_BROOD_YEAR==0  ~ "Natural (assumed)",
+        #                          TRUE ~ "Unknown"),
+        # RESOLVED_ID_ORIGIN = paste0(`(R) Origin`, sep=" ", RESOLVED_STOCK_ORIGIN),
+         #RESOVLED_REGION_ORIGIN = case_when(RESOLVED_STOCK_SOURCE=="DNA" & PROB_1 <0.75 ~ paste0(`(R) Origin`, sep=" ", "Unknown (<75% GSI assignment)"),
+          #                                  TRUE ~ paste0(`(R) Origin`, sep=" ", RESOLVED_STOCK_ROLLUP)),
+         yday = lubridate::yday(COLLECTION_DATE),
+         LEGAL_STATUS = case_when(LENGTH_MM > 450 & LENGTH_MM < 800 ~ "LEGAL",
+                                  LENGTH_MM <= 450 ~ "SUBLEGAL",
+                                  LENGTH_MM >= 800 & yday%in%c(196:212) ~ "EXTRALEGAL",
+                                  LENGTH_MM >= 800 & yday%notin%c(196:212) ~ "LEGAL")) %>% 
+  print()
+
+
+# Catch estimates ----------------------
+catEst <- readxl::read_excel(path="//dcbcpbsna01a.ENT.dfo-mpo.ca/Salmon$/FMCR_Fishery_Monitoring_Catch_Reporting/Recreational_CM/Catch_Data/SC Sport Catch Creel Sub-area Disposition (Master Do No Edit).xlsx", sheet="YTD") %>%
+  filter(PFMA%in%c("PFMA 21", "PFMA 121"), YEAR%in%c(2017:2023), SPECIES=="CHINOOK SALMON")
+```
+
+<br> 
+
+
+
+# **Sport Fishery Biodata Results**
+
+<br>
+
+## **Assumptions and caveats**
+
+Definitions of natural, hatchery and unknown origin Chinook:
+
+- A fish is assumed Natural origin if an otolith is returned as "Not Marked" and the adipose fin is intact. PBT is not currently considered as it is stock/facility-specific, and would likely only apply to very recent RYs (2022/2023). 
+  + This assumption may not be appropriate in cases where hatchery fish are not thermally marked AND have no other identifier (probably rare? Perhaps US?).
+  + Intact adipose fins *alone* are NOT evidence of a natural fish, and are considered "Unknown" origin (see below)
+- A fish is Hatchery origin if it has an adipose clip, a thermal mark, a CWT, and/or a PBT BY assignment (in recent years).
+  + Note there are some rare cases of wild-tagging programs in Yukon/Alaska, but these are not expected to show up in great numbers for Chinook. 
+- A fish is Unknown origin if it has an intact adipose and no other mark or tag to inform further, e.g., destroyed or missing otolith, missing or lost tag, no  samples analyzed, etc.) 
+- Stock ID is assigned in order of reliability: CWT > PBT > Otolith > GSI
+
+<br>
+
+The following caveats/assumptions must be taken into consideration when interpreting the recreational fishery data presented below:
+
+- A genetic stock ID is only included if it has >= 75% certainty.
+- It is assumed that biosampling is representative of kept catch, but this varies year to year as sample sizes are low. 
+- Biosamples represent kept, legal catch and therefore do not represent the portions of populations <45cm or >80cm
+  + Only legal sized Chinook are included here (> 45cm). Extra-legal (aka Super-legal) Chinook (>80cm) have also been excluded as current regs exclude these fish from the fishery.
+- **No corrections are done to account for thermal mark issues from any facility in any given year. Missing  thermal marks would show up as "Not Marked" and bias results towards reporting more natural-origin Chinook than may in fact exist.**
+- No GSI results are available prior to 2020 in Area 21/121. 
+- Considerable changes to the recreational fishery along SWVI came into effect around 2018-2019 so comparisons across these years should be careful. 
+- Unknown stock IDs were excluded from the following analyses. Results are expressed as regional population IDs as a proportion of known samples. 
+
+<br>
+
+**Please keep in mind sample rates for these areas are below ideal levels, so conclusions drawn should be very careful. Please read the last section that lays out the sample rates (i.e., % of kept catch sampled) by month and year!"**
+
+<br>
+
+<br>
+
+## **Area 21/121 Heatmaps (Regional IDs)**
+
+```{r echo=T, message=F, warning=F}
+# ================= Region-level monthly % composition =================
+area21offshoreREGION.BDWR <- crestBDWR %>% 
+  filter(AREA %in% c("21", "121"), SAMPLE_TYPE=="Sport", SPECIES==124, DISPOSITION=="Kept", LEGAL_STATUS=="LEGAL", `(R) RESOLVED ORIGIN-REGION ID`%notin%c("Unknown NA", "Unknown Unknown (<75% GSI assignment)")) %>% 
+  group_by(YEAR, MONTH, AREA, `(R) RESOLVED ORIGIN-REGION ID`) %>% 
+  summarize(n = n()) %>% 
+  group_by(YEAR, MONTH, AREA) %>%
+  mutate(AreaMonthSampleTotal = sum(n),
+         AreaPropnMonthlySamples=n/AreaMonthSampleTotal) 
+
+
+
+# ================= Stock-level monthly % composition =================
+# FOCUS ON NITINAT SPECIFICALLY
+# 1. Summarize biosampling results and group as Nitinat, Non-Nitinat, and Unknown -----------------
+area21offshoreSTOCK.BDWR <- crestBDWR %>% 
+  filter(AREA %in% c("21", "121"), SAMPLE_TYPE=="Sport", SPECIES==124, DISPOSITION=="Kept", LEGAL_STATUS=="LEGAL", `(R) RESOLVED ORIGIN-STOCK ID`%notin%c("Unknown NA", "Unknown Unknown (<75% GSI assignment)")) %>% 
+  mutate(isNitinat = case_when(grepl("Nitinat", `(R) RESOLVED ORIGIN-STOCK ID`) ~ `(R) RESOLVED ORIGIN-STOCK ID`,
+                               !grepl("Nitinat", `(R) RESOLVED ORIGIN-STOCK ID`) & `(R) Origin`!="Unknown" ~ 
+                                 paste0(`(R) Origin`, " ", "Non-Nitinat"),
+                               !grepl("Nitinat", `(R) RESOLVED ORIGIN-STOCK ID`) & `(R) Origin`=="Unknown" ~ 
+                                 "Unknown Non-Nitinat")) %>% 
+  group_by(YEAR, AREA, MONTH, isNitinat) %>% 
+  summarize(n = n()) %>% 
+  group_by(YEAR, MONTH, AREA) %>%
+  mutate(AreaMonthSampleTotal = sum(n),
+         PropnMonthlySamplesNitinat=n/AreaMonthSampleTotal)  
+
+# 2. Join Biodata composition to catch and calculate # caught by ID -----------------
+a21.121catchComp <- left_join(area21offshoreSTOCK.BDWR,
+                              catEst %>% 
+                                rename(AREA=PFMA) %>% 
+                                mutate(AREA = str_sub(AREA, start=6, end=9)) %>%
+                                group_by(YEAR, AREA, MONTH, DISPOSITION) %>% 
+                                summarize(Est = sum(ESTIMATE),
+                                          `%SE` = sum(PERCENT_STANDARD_ERROR)) %>% 
+                                pivot_wider(names_from=DISPOSITION, values_from=c(Est, `%SE`)) %>%
+                                select(YEAR, AREA, MONTH, Est_Kept, `%SE_Kept`, `Est_Released Legal`, `%SE_Released Legal`, 
+                                       `Est_Released Sub-legal`, `%SE_Released Sub-legal`),
+                              by=c("AREA", "YEAR", "MONTH")) %>% 
+  mutate(estKeptByID = PropnMonthlySamplesNitinat*Est_Kept) 
+```
+
+
+```{r a21comp, out.width='1300px', out.height='500px', fig.align='left', fig.cap='Region-level ID of Chinook caught in Area 21. Data are expressed as a proportion of the number of biological samples collected each month. Results are from creel survey data and therefore only represent legal (<45cm, >80cm), kept catch. Gray shaded area indicates years with no GSI sampling, in which case Natural-origin stock ID is not possible. Red shading indicates 2023 results are incomplete.'}
+
+# Region rollup stock comp --------------------
+
+# AREA 21
+ggplotly(
+  ggplot() +
+    geom_ribbon(data=area21offshoreREGION.BDWR %>%
+                  filter(AREA=="21", YEAR%in%c(2017:2019)),
+                aes(ymin="Unknown SWVI", ymax="Natural (assumed) California", x=factor(MONTH, levels=month.name)), 
+                fill="gray60", colour="gray60", alpha=0.1, size=100) +
+    geom_ribbon(data=area21offshoreREGION.BDWR %>%
+                  filter(AREA=="21", YEAR==2023),
+                aes(ymin="Unknown SWVI", ymax="Hatchery California", x=factor(MONTH, levels=month.name)), 
+                fill="red", colour="red", alpha=0.1, size=100) +
+    geom_point(data=area21offshoreREGION.BDWR%>%filter(AREA=="21"),
+               aes(x=factor(MONTH, levels=month.name), y=`(R) RESOLVED ORIGIN-REGION ID`,  fill=AreaPropnMonthlySamples, text=paste0("n=",n)),
+               shape=22, size=3.5, colour="transparent") +
+    scale_fill_viridis_b(breaks=seq(0,1,by=0.1), labels=scales::percent) +
+    labs(x="", y="", fill="Proportion of biosamples \nby month for Area 21") +
+    facet_wrap(~YEAR, nrow=1) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1),
+          legend.title =  element_text(face="bold")),
+  tooltip = c("MONTH", "(R) RESOLVED ORIGIN-REGION ID", "AreaPropnMonthlySamples", "text")) 
+```
+
+<br>
+
+<br>
+
+```{r a121comp, out.width='1300px', out.height='500px', fig.cap='Region-level ID of Chinook caught in Area 121. Data are expressed as a proportion of the number of biological samples collected each month. Results are from creel survey data and therefore only represent legal (<45cm, >80cm), kept catch. Gray shaded area indicates years with no GSI sampling, in which case Natural-origin stock ID is not possible. Red shading indicates 2023 results are incomplete.'}
+
+# AREA 121
+
+ggplotly(
+  ggplot() +
+geom_ribbon(data=a21.121catchComp %>%
+                    filter(AREA=="21", YEAR%in%c(2017:2019)),
+                  aes(ymin=-Inf, ymax=Inf, 
+                      x=factor(MONTH, levels=month.name)), 
+                  fill="gray60", colour="gray60", alpha=0.1, size=100) +
+    geom_ribbon(data=area21offshoreREGION.BDWR %>%
+                  filter(AREA=="121", YEAR==2023),
+                aes(x=factor(MONTH, levels=month.name),#(c("June","July", "August", "September"), month.name), 
+                    ymin="Unknown SWVI", ymax="Hatchery California"), 
+                fill="red", colour="red", alpha=0.1, size=100) +
+    geom_point(data=area21offshoreREGION.BDWR%>%filter(AREA=="121"), 
+               aes(x=factor(MONTH, levels=month.name), y=`(R) RESOLVED ORIGIN-REGION ID`,  fill=AreaPropnMonthlySamples, text=paste0("n=",n)),
+               shape=22, size=3.5, colour="transparent") +
+    scale_fill_viridis_b(breaks=seq(0,1,by=0.1), labels=scales::percent) +
+    labs(x="", y="", fill="Proportion of biosamples \nby month for Area 121") +
+    facet_wrap(~YEAR, nrow=1) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1)),
+  tooltip = c("MONTH", "(R) RESOLVED ORIGIN-REGION ID", "AreaPropnMonthlySamples", "text")) 
+```
+
+<br>
+
+## **Area 21/121 Heatmaps (Nitinat/stock-specific)**
+
+```{r a21comp-NIT, out.width='1300px', out.height='500px', fig.align='left', fig.cap='ID of Chinook caught in Area 21 by Nitinat, non-Nitinat, or Unknown. The proportion of the number of biological samples collected each month by ID group was applied to kept, legal Chinook catch estimates. Results are from creel survey data and therefore only represent legal (<45cm, >80cm), kept catch. Gray shaded area indicates years with no GSI sampling, in which case Natural-origin stock ID is less certain. Red shading indicates 2023 results are incomplete.'}
+
+# Region rollup stock comp --------------------
+
+# AREA 21
+ggplotly(
+  ggplot() +
+      geom_ribbon(data=a21.121catchComp %>%
+                    filter(AREA=="21", YEAR%in%c(2017:2019)),
+                  aes(ymin=-Inf, ymax=Inf, 
+                      x=factor(MONTH, levels=month.name)), 
+                  fill="gray60", colour="gray60", alpha=0.1, size=100) +
+      geom_ribbon(data=a21.121catchComp %>%
+                    filter(AREA=="21", YEAR==2023),
+                  aes(ymin="Unknown Non-Nitinat", ymax="Hatchery Nitinat River", x=factor(MONTH, levels=month.name)), 
+                  fill="red", colour="red", alpha=0.1, size=100) +
+    geom_point(data=a21.121catchComp%>%filter(AREA=="21"),
+               aes(x=factor(MONTH, levels=month.name), y=isNitinat, fill=estKeptByID, text=paste0("n=",n)),
+               shape=22, size=3.5, colour="transparent") +
+    scale_fill_viridis_b(breaks=seq(0,1000,by=100)) +
+    labs(x="", y="", fill="Kept, legal Chinook \nby stock ID group for Area 21") +
+    facet_wrap(~YEAR, nrow=1) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1),
+          legend.title =  element_text(face="bold")),
+  tooltip = c("MONTH", "isNitinat", "estKeptByID", "text")) 
+```
+
+<br>
+
+Above figure in table format: 
+
+```{r}
+a21.121catchComp %>% 
+  filter(AREA=="21") %>% 
+  kbl(align="c", caption="Estimates and % Standard Error of Chinook caught and released by size status (legal/sublegal) in Area 21 and 121. Final column 'estKeptByID' multiplies the stock ID % from PropnMonthlySamplesNitinat by total kept monthly catch in Est_Kept.") %>%
+  kable_paper("hover", full_width=T, position = "center")
+```
+
+<br>
+
+```{r a121comp-NIT, out.width='1300px', out.height='500px', fig.align='left', fig.cap='ID of Chinook caught in Area 121 by Nitinat, non-Nitinat, or Unknown. The proportion of the number of biological samples collected each month by ID group was applied to kept, legal Chinook catch estimates. Results are from creel survey data and therefore only represent legal (<45cm, >80cm), kept catch. Gray shaded area indicates years with no GSI sampling, in which case Natural-origin stock ID is less certain. Red shading indicates 2023 results are incomplete. KD note: I find >10k caught in July 2017 surprising, but I confirmed this is the official estimate out of CREST. Most (9889) were from 121B, of which most were adipose-clipped (~6600).'}
+
+# Region rollup stock comp --------------------
+
+# AREA 21
+ggplotly(
+  ggplot() +
+    geom_ribbon(data=a21.121catchComp %>%
+                  filter(AREA=="21", YEAR%in%c(2017:2019)),
+                aes(ymin=-Inf, ymax=Inf, 
+                    x=factor(MONTH, levels=month.name)), 
+                fill="gray60", colour="gray60", alpha=0.1, size=100) +
+    geom_ribbon(data=a21.121catchComp %>%
+                  filter(AREA=="21", YEAR==2023),
+                aes(ymin="Unknown Non-Nitinat", ymax="Hatchery Nitinat River", x=factor(MONTH, levels=month.name)), 
+                fill="red", colour="red", alpha=0.1, size=100) +
+    geom_point(data=a21.121catchComp%>%filter(AREA=="121"),
+               aes(x=factor(MONTH, levels=month.name), y=isNitinat, fill=estKeptByID, text=paste0("n=",n)),
+               shape=22, size=3.5, colour="transparent") +
+    scale_fill_viridis_b() +
+    labs(x="", y="", fill="Kept, legal Chinook \nby stock ID group for Area 121") +
+    facet_wrap(~YEAR, nrow=1) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1),
+          legend.title =  element_text(face="bold")),
+  tooltip = c("MONTH", "isNitinat", "estKeptByID", "text")) 
+```
+
+<br>
+
+Above figure in table format: 
+
+```{r}
+a21.121catchComp %>% 
+  filter(AREA=="121") %>% 
+  kbl(align="c", caption="Estimates and % Standard Error of Chinook caught and released by size status (legal/sublegal) in Area 121 and 121. Final column 'estKeptByID' multiplies the stock ID % from PropnMonthlySamplesNitinat by total kept monthly catch in Est_Kept.") %>%
+  kable_paper("hover", full_width=T, position = "center")
+```
+
+<br>
+
+## **Catch and Sample Rate**
+
+<br>
+
+### Sample rate
+
+```{r include=F}
+samp_Rate <- left_join(catEst %>% 
+            group_by(YEAR, MONTH, PFMA, DISPOSITION) %>%
+            summarize(TotalCatch = sum(ESTIMATE)) %>%
+            arrange(YEAR, PFMA, match(MONTH, month.name)) %>%
+            rename(AREA=PFMA) %>%
+            mutate(AREA = str_sub(AREA, 6,9)) ,
+          crestBDWR %>% 
+            filter(AREA %in% c("21", "121"), SAMPLE_TYPE=="Sport", SPECIES==124, DISPOSITION=="Kept", LEGAL_STATUS=="LEGAL") %>% 
+            group_by(YEAR, MONTH, AREA) %>% 
+            summarize(n = n()) %>%
+            mutate(DISPOSITION="Kept")) %>%
+  mutate(SampleRate = round(n/TotalCatch,3))  
+```
+
+
+```{r sampRateFig, fig.cap='Sample rate of Chinook kept legal catch in Area 21 and 121 (i.e., % of kept legal catch sampled each month). Note that September 2018 sample rate was removed as it was highly uncertain. Sample rate represents the number of samples taken compared to CREST catch point estimates and does not take into account catch uncertainty.'}
+
+ggplotly(
+  ggplot(data=samp_Rate %>% filter(DISPOSITION=="Kept"), 
+         aes(x=factor(MONTH, levels=month.name), y=SampleRate, group=as.factor(YEAR), colour=as.factor(YEAR), fill=as.factor(YEAR), 
+         text=paste0(MONTH, sep=" ", YEAR))) +
+    geom_line(size=1, alpha=0.7) +
+    scale_y_continuous(labels = scales::percent, limits = c(0,0.3)) +
+    labs(x="", y="Sample Rate (%)", fill="", colour="") +
+    theme_bw() +
+    facet_wrap(~AREA, nrow=2),
+  tooltip=c("text", "SampleRate"))
+```
+
+<br>
+
+### Area 21 and 121 Chinook catch and release data
+
+```{r sampRate}
+samp_Rate %>%
+  kbl(align="c", caption="Chinook caught and released by size status (legal/sublegal) in Area 21 and 121 and associated sample rates. Note though there are extra-legal designations that may not be represented in catch estimates. Sample rate of NA indicates no samples were taken for that area-month-year.") %>%
+  kable_paper("hover", full_width=T, position = "center") 
+```
+
+
