@@ -1,11 +1,200 @@
 
+```{r fisheriessetup, include=F}
+# title: "part3-fisheries-knitable"
+
+knitr::opts_chunk$set(echo=F,  message=F, warning=F)
+
+
+# Load libraries ------------------
+library(tidyverse)
+library(here)
+library(readxl)
+library(scales)
+library(plotly)
+library(bookdown)
+library(kableExtra)
+
+
+# Load helpers ------------------
+"%notin%" <- Negate("%in%")
 
 
 
-fisheries test
 
 
 
+
+
+# ============================ Load data ============================
+
+# Biodata w results ----------------------
+crestBDWR <- readxl::read_excel(path=list.files(
+  path="//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/CHINOOK/WCVI_TERMINAL_RUN/Annual_data_summaries_for_RunRecons/CRESTcompile_base-files/2-Export-from-R/",
+                                           pattern="R_OUT - Biological_Data_With_Results*.*xlsx", full.names = T),
+                                   sheet="CREST Biodata Compiled") %>%
+  mutate(#`(R) Origin` = case_when(HATCHERY_ORIGIN=="Y" | PBT_BROOD_YEAR > 2000 ~ "Hatchery",
+        #                          THERMALMARK=="Not Marked" | is.na(PBT_BROOD_YEAR) | PBT_BROOD_YEAR==0  ~ "Natural (assumed)",
+        #                          TRUE ~ "Unknown"),
+        # RESOLVED_ID_ORIGIN = paste0(`(R) Origin`, sep=" ", RESOLVED_STOCK_ORIGIN),
+         #RESOVLED_REGION_ORIGIN = case_when(RESOLVED_STOCK_SOURCE=="DNA" & PROB_1 <0.75 ~ paste0(`(R) Origin`, sep=" ", "Unknown (<75% GSI assignment)"),
+          #                                  TRUE ~ paste0(`(R) Origin`, sep=" ", RESOLVED_STOCK_ROLLUP)),
+         yday = lubridate::yday(COLLECTION_DATE),
+         LEGAL_STATUS = case_when(LENGTH_MM > 450 & LENGTH_MM < 800 ~ "LEGAL",
+                                  LENGTH_MM <= 450 ~ "SUBLEGAL",
+                                  LENGTH_MM >= 800 & yday%in%c(196:212) ~ "SUPERLEGAL",
+                                  LENGTH_MM >= 800 & yday%notin%c(196:212) ~ "LEGAL")) %>% 
+  print()
+
+
+# Catch estimates ----------------------
+catEst <- readxl::read_excel(path="//dcbcpbsna01a.ENT.dfo-mpo.ca/Salmon$/FMCR_Fishery_Monitoring_Catch_Reporting/Recreational_CM/Catch_Data/SC Sport Catch Creel Sub-area Disposition (Master Do No Edit).xlsx", sheet="YTD") %>%
+  filter(PFMA%in%c("PFMA 21", "PFMA 121"), YEAR%in%c(2017:2023), SPECIES=="CHINOOK SALMON")
+```
+
+<br> 
+
+
+
+# **Sport Fishery Biodata Results**
+
+<br>
+
+## **Assumptions and caveats**
+
+Definitions of natural, hatchery and unknown origin Chinook:
+
+- A fish is assumed Natural origin if an otolith is returned as "Not Marked". PBT is not currently considered as it is stock/facility-specific, and would likely only apply to very recent BYs (2022/2023). 
+  + This assumption may not be appropriate for US stocks that may or may not thermally mark fish.
+  + Intact adipose fins are NOT evidence of a natural fish, and are considered "Unknown" origin (see below)
+- A fish is Hatchery origin if it has an adipose clip, a thermal mark, a CWT, and/or a PBT assignment (in recent years).
+- A fish is Unknown origin if it has an intact adipose and no other mark or tag to inform further, e.g., destroyed or missing otolith, missing or lost tag, no  samples analyzed, etc.) 
+- Stock ID is assigned in order of reliability: CWT > PBT > Otolith > GSI
+
+<br>
+
+The following caveats/assumptions must be taken into consideration when interpreting the recreational fishery data presented below:
+
+- A genetic stock ID is only included if it has >= 75% certainty.
+- It is assumed that biosampling is representative of kept catch, but this varies year to year as sample sizes are low. 
+- Biosamples represent kept, legal catch and therefore do not represent the portions of populations <45cm or >80cm
+  + Only legal sized Chinook are included here (> 45cm). Super-legal Chinook (>80cm) have also been excluded as current regs exclude these fish from the fishery.
+- **No corrections are done to account for thermal mark issues from any facility in any given year. Missing  thermal marks would show up as "Not Marked" and bias results towards reporting more natural-origin Chinook than may in fact exist.**
+- GSI sampling did not occur prior to 2020 in Area 21/121. 
+- Major fishery changes came into effect around 2018-2019 so comparisons across these years should be careful. 
+
+
+<br>
+
+<br>
+
+
+## **Heatmaps**
+
+```{r echo=T, message=F, warning=F}
+# Region-level monthly % composition -----------------
+area21offshoreREGION.BDWR <- crestBDWR %>% 
+  filter(AREA %in% c("21", "121"), SAMPLE_TYPE=="Sport", SPECIES==124, DISPOSITION=="Kept", LEGAL_STATUS=="LEGAL") %>% 
+  group_by(YEAR, MONTH, AREA, RESOVLED_REGION_ORIGIN) %>% 
+  summarize(n = n()) %>% 
+  group_by(YEAR, MONTH, AREA) %>%
+  mutate(AreaMonthSampleTotal = sum(n),
+         AreaPropnMonthlySamples=n/AreaMonthSampleTotal)  
+```
+
+
+```{r a21comp, out.width='1300px', out.height='500px', fig.cap='Region-level ID of Chinook caught in Area 21. Data are expressed as a proportion of the number of biological samples collected each month. Results are from creel survey data and therefore only represent legal (<45cm, >80cm), kept catch. Gray shaded area indicates years with no GSI sampling, in which case Natural-origin stock ID is not possible.'}
+
+# Region rollup stock comp --------------------
+
+# AREA 21
+ggplotly(
+  ggplot() +
+    geom_ribbon(data=area21offshoreREGION.BDWR %>%
+                  filter(AREA=="21", YEAR%in%c(2017:2019)),
+                aes(ymin="Natural (assumed) Unknown (<75% GSI assignment)", ymax="Natural (assumed) California", factor(MONTH, levels=month.name)), 
+                fill="gray60", colour="gray60", alpha=0.1, size=100) +
+    geom_ribbon(data=area21offshoreREGION.BDWR %>%
+                  filter(AREA=="21", YEAR==2023),
+                aes(ymin="Natural (assumed) Unknown (<75% GSI assignment)", ymax="Hatchery California", factor(MONTH, levels=month.name)), 
+                fill="red", colour="red", alpha=0.1, size=100) +
+    geom_point(data=area21offshoreREGION.BDWR%>%filter(AREA=="21")%>%filter(RESOVLED_REGION_ORIGIN!="Unknown NA"),
+               aes(factor(MONTH, levels=month.name), y=RESOVLED_REGION_ORIGIN,  fill=AreaPropnMonthlySamples, text=paste0("n=",n)),
+               shape=22, size=3.5, colour="transparent") +
+    scale_fill_viridis_b(breaks=seq(0,1,by=0.1), labels=scales::percent) +
+    labs(x="", y="", fill="Proportion of biosamples \nby month for Area 21") +
+    facet_wrap(~YEAR, nrow=1) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1),
+          legend.title =  element_text(face="bold")),
+  tooltip = c("MONTH", "RESOVLED_REGION_ORIGIN", "AreaPropnMonthlySamples", "text")) 
+```
+
+
+
+
+
+```{r a121comp, out.width='1300px', out.height='500px', fig.cap='Region-level ID of Chinook caught in Area 21. Data are expressed as a proportion of the number of biological samples collected each month. Results are from creel survey data and therefore only represent legal (<45cm, >80cm), kept catch. Gray shaded area indicates years with no GSI sampling, in which case Natural-origin stock ID is not possible.'}
+
+# AREA 121
+
+ggplotly(
+  ggplot() +
+    geom_ribbon(data=area21offshoreREGION.BDWR %>%
+                  filter(AREA=="21", YEAR%in%c(2017:2019)),
+                aes(ymin="Natural (assumed) Unknown (<75% GSI assignment)", ymax="Natural (assumed) California", factor(MONTH, levels=month.name)), 
+                fill="gray60", colour="gray60", alpha=0.1, size=100) +
+    geom_ribbon(data=area21offshoreREGION.BDWR %>%
+                  filter(AREA=="21", YEAR==2023),
+                aes(ymin="Natural (assumed) Unknown (<75% GSI assignment)", ymax="Hatchery California", factor(MONTH, levels=month.name)), 
+                fill="red", colour="red", alpha=0.1, size=100) +
+    geom_point(data=area21offshoreREGION.BDWR%>%filter(AREA=="121")%>%filter(RESOVLED_REGION_ORIGIN!="Unknown NA"), 
+               aes(factor(MONTH, levels=month.name), y=RESOVLED_REGION_ORIGIN,  fill=AreaPropnMonthlySamples, text=paste0("n=",n)),
+               shape=22, size=3.5, colour="transparent") +
+    scale_fill_viridis_b(breaks=seq(0,1,by=0.1), labels=scales::percent) +
+    labs(x="", y="", fill="Proportion of biosamples \nby month for Area 121") +
+    facet_wrap(~YEAR, nrow=1) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1)),
+  tooltip = c("MONTH", "RESOVLED_REGION_ORIGIN", "AreaPropnMonthlySamples", "text")) 
+```
+
+<br> 
+
+## **Catch and Sample Rate**
+
+<br>
+
+```{r sampRate}
+samp_Rate <- left_join(catEst %>% 
+            group_by(YEAR, MONTH, PFMA, DISPOSITION) %>%
+            summarize(TotalCatch = sum(ESTIMATE)) %>%
+            arrange(YEAR, PFMA, match(MONTH, month.name)) %>%
+            rename(AREA=PFMA) %>%
+            mutate(AREA = str_sub(AREA, 6,9)) ,
+          crestBDWR %>% 
+            filter(AREA %in% c("21", "121"), SAMPLE_TYPE=="Sport", SPECIES==124, DISPOSITION=="Kept", LEGAL_STATUS=="LEGAL") %>% 
+            group_by(YEAR, MONTH, AREA) %>% 
+            summarize(n = n()) %>%
+            mutate(DISPOSITION="Kept")) %>%
+  mutate(SampleRate = round(n/TotalCatch,3))  
+
+samp_Rate %>%
+  kbl(align="c", caption="Chinook caught and released by size in Area 21 and 121.") %>%
+  kable_paper("hover", full_width=T, position = "center") 
+```
+
+<br>
+
+```{r sampRateFig, fig.cap='Sample rate of Chinook kept legal catch in Area 21 and 121. Note that September 2018 sample rate was removed as it was highly uncertain. Sample rate represents the number of samples taken compared to CREST catch point estimates and does not take into account catch uncertainty.'}
+ggplot(data=samp_Rate %>% filter(DISPOSITION=="Kept"), 
+       aes(x=factor(MONTH, levels=month.name), y=SampleRate, group=as.factor(YEAR), colour=as.factor(YEAR), fill=as.factor(YEAR))) +
+  #geom_point(size=3, shape=21) +
+  geom_line(size=1, alpha=0.7) +
+  scale_y_continuous(labels = scales::percent, limits = c(0,0.3)) +
+  labs(x="", y="Sample Rate (%)", fill="", colour="") +
+  theme_bw() +
+  facet_wrap(~AREA, nrow=2)
+```
 
 
 
