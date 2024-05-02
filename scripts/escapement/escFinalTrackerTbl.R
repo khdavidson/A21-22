@@ -33,12 +33,12 @@ a2122tbl <- rbind(
 
 
 # Export
-write_xlsx(a2122tbl, path=paste0("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/",
-                               analysis_year,
-                               "/SILs/Area 21-22/Area 21-22 Final escapement tracker ",
-                               analysis_year,
-                               ".xlsx"
-                               ))
+# write_xlsx(a2122tbl, path=paste0("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/",
+#                                analysis_year,
+#                                "/SILs/Area 21-22/Area 21-22 Final escapement tracker ",
+#                                analysis_year,
+#                                ".xlsx"
+#                                ))
 
 # Locked for editing until 2024! 
 
