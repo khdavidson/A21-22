@@ -17,7 +17,7 @@ a2122tbl <- rbind(
     mutate(Access_DB = NA,
            NewEscIndex = NA,
            WCVIStreamSummary = NA,
-           ReleasedToSDU = NA),
+           NuSEDS = NA),
   data.frame(
     year=analysis_year,
     area="22",
@@ -27,7 +27,7 @@ a2122tbl <- rbind(
     mutate(Access_DB = NA,
            NewEscIndex = NA,
            WCVIStreamSummary = NA,
-           ReleasedToSDU = NA)
+           NuSEDS = NA)
 )
 
 
