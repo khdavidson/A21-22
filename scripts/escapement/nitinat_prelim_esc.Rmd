@@ -83,7 +83,10 @@ wbdyVals <- readxl::read_excel(path=here("data", "escapement", "prelim-inseason"
 
 
 # SIL+AUC DB TABLE: AUC Data Table for analysis: 
-AUCdataTable <- readxl::read_excel(path=here("data", "escapement", "prelim-inseason", "AUC_DataAnalysisTable_area21-22.xlsx"))
+AUCdataTable <- readxl::read_excel(path=paste0("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/",
+                                               analysis_year,
+                                               "/SILs/Area 21-22/AUC_DataAnalysisTable.xlsx"))
+  #readxl::read_excel(path=here("data", "escapement", "prelim-inseason", "AUC_DataAnalysisTable_area21-22.xlsx"))
 
 
 # SIL+AUC DB TABLE: EscEstSppHeader table:
@@ -614,17 +617,20 @@ ggplot() +
   geom_bar(data=AUCdataTable %>% 
              filter(ShortSpecies=="CO") %>% 
              pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
-             filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
+             filter(est_type %in% c("LiveAdults", "ExpLiveAdults"), n>=0) %>%
+             mutate(n = case_when(is.na(n) ~ 0,
+                                  TRUE ~ n)), 
            aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
   labs(x="", y="Adult Coho counts", fill="Expansion", colour="Expansion") +
-  scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
-  #scale_y_continuous(limits=c(0, max(AUCdataTable[AUCdataTable$ShortSpecies=="CO",]$ExpLiveAdults,na.rm=T))) +
+  scale_x_date(date_breaks="7 day", date_labels = "%b %d", limits = c(as.Date(paste0(analysis_year, "-08-15")), 
+                                                                      as.Date(paste0(analysis_year, "-12-15")))) +
+  expand_limits(y=0) +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1),
         legend.position = "bottom") +
   facet_wrap(~Section_AreaInspected, scales="free_y")
 ```
-
+s
 Figure: Live Adult Coho raw counts (blue) and counts expanded for % population and/or OE (pink). 
 
 <br>
