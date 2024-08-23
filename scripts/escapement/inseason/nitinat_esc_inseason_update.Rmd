@@ -1,7 +1,13 @@
 ---
-title: "Nitinat in-season"
+title: "**Nitinat in-season update**"
 date: 'Last update: `r Sys.Date()`'
-output: html_document
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    toc_collapsed: false 
+    toc_depth: 5
+    number_sections: true
 ---
 
 ```{r setup, include=FALSE}
@@ -10,61 +16,206 @@ knitr::opts_chunk$set(echo = F, warning=F, message=F)
 
 # Load packages ---------------------------------
 library(tidyverse)
-library(readxl)
-library(here)
-library(stringr)
 
 
 # Helpers --------------------------------- <<<UPDATE>>>
-escapement_year <- 2023
+escapement_year <- 2024
 
 
 # ================== READ DATA ================== 
 # SIL data ---------------------------------
-nitinat.SIL <- readxl::read_excel(path=paste0("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/", 
-                                              escapement_year, 
-                                              "/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_", 
-                                              escapement_year, 
-                                              ".xlsx"),
-                                  sheet="Nitinat River raw SIL entry", guess_max=1000) %>% 
-  mutate_if(is.numeric, ~replace_na(., 0)) %>% 
-  mutate_at(c("adults # holding", "adults live / habitat seen (# Est Live)"), ~round(.,0)) %>% 
-  mutate(date = lubridate::ymd(date)) %>%
-  print()
+# nitinat.SIL <- readxl::read_excel(path=paste0("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/", 
+#                                               escapement_year, 
+#                                               "/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_", 
+#                                               escapement_year, 
+#                                               ".xlsx"),
+#                                   sheet="Nitinat River raw SIL entry", guess_max=1000) %>% 
+#   mutate_if(is.numeric, ~replace_na(., 0)) %>% 
+#   mutate_at(c("adults # holding", "adults live / habitat seen (# Est Live)"), ~round(.,0)) %>% 
+#   mutate(date = lubridate::ymd(date)) %>%
+#   print()
 
 
 # Water data ---------------------------------
-nitinat.water <- lapply(list.files(path = here("data"),
-                                   pattern = "^NitinatWaterLevelHydrometData.*\\.xlsx$",
-                                   full.names = TRUE), 
-                        readxl::read_excel, sheet="Exported Data") %>% 
-  do.call("cbind",.) %>%
-  mutate(time = stringr::str_sub(Time, 12, 19),
-         date = as.Date(stringr::str_sub(Time,1,11))) %>%
-  mutate_at("Staff Gauge(mH20)", as.numeric) %>%
-  rename(DateTime = Time) %>%
+nitinat.water <- 
+  # lapply(list.files(path = here::here("data", "enviro"),
+  #                   pattern = "^NitinatWaterLevelHydrometData.*\\.xlsx$",
+  #                   full.names = TRUE), 
+  #        readxl::read_excel, sheet="Exported Data") %>% 
+  #do.call("cbind",.) %>%
+  lapply(list.files(path = here::here("data", "enviro"),
+                    pattern = "NitinatWaterLevelHydrometData_20*",
+                    full.names = TRUE),
+         read.csv, skip=1) %>%
+  do.call("rbind",.) %>%
+  separate(Received, sep=" ", c("date", "time", "stamp")) %>%
+  mutate(date2 = case_when(is.na(TL.Battery.V) ~ lubridate::mdy(date),
+                          !is.na(TL.Battery.V) ~ lubridate::dmy(date)),
+        year = lubridate::year(date2),
+        month = lubridate::month(date2, label=T, abbr=T),
+        DOY = lubridate::yday(date2),
+        Water.Level.m = case_when(grepl("\\*", Water.Level.m) ~ NA,
+                                  TRUE ~ as.numeric(Water.Level.m)),
+        label_group = case_when(year<escapement_year ~ "Historical",
+                                        year==escapement_year ~ as.character(year)),
+        hour = as.numeric(stringr::str_sub(stringr::str_pad(time, width=5, pad = "0"), 1,2)),
+        hour = case_when(hour==12 & stamp=="AM" ~ 0,
+                         TRUE ~ hour)) %>%
   print()
 
 
 
-# Historical SIL data ---------------------------------
-rtTabs <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/run timing tables (updated).xlsx", sheet="nitinat_Rfriendly") %>% 
-  pivot_longer(cols=c(`81`:`124`), names_to="stat_week", values_to="count") %>%
+# Run timing ---------------------------------
+nit.rtStWk <- readxl::read_excel(path=paste0(here::here("data", "escapement"), sep="/", 
+                                             list.files(path=here::here("data", "escapement"),
+                                                        pattern="run timing tables (updated)*")), 
+                                 sheet="Nitinat", guess_max=10000, trim_ws=T, range=cellranger::cell_limits(c(4, 1), c(NA, NA))) %>% 
+  select(-c(`...24`:`...75`)) %>%
+  rename(year=`...1`) %>% 
+  filter(if_any(everything(), ~ !is.na(.)), !grepl("Table", year), !grepl("Year", year), !is.na(year)) %>% 
+  mutate(species = c(rep("chinook", nrow(.)/3), rep("coho", nrow(.)/3), rep("chum", nrow(.)/3)),
+         `92` = case_when(`92`=="1000-2000" ~ as.numeric(1500),
+                          TRUE ~ as.numeric(`92`)),
+         across(c(`81`:`124`), ~as.numeric(.)),
+         plot_group = case_when(year==escapement_year ~ year,
+                                year!=escapement_year ~ paste0(min(year), sep="-", (escapement_year-1)))) %>%
+  pivot_longer(cols = c(`81`:`124`), names_to = "stat_week", values_to = "count") %>% 
   print()
-rtTabs$stat_week <- factor(rtTabs$stat_week, levels=c("81","82","83","84","91","92","93","94","101","102","103","104","105",
-                                                              "111","112","113","114","115","121","122","123","124", ordered=T))
+
+nit.rtStWk$stat_week <- factor(nit.rtStWk$stat_week,
+                               levels=c("81","82","83","84",
+                                        "91","92","93","94",
+                                        "101","102","103","104","105",
+                                        "111","112","113","114","115",
+                                        "121","122","123","124", ordered=T)) 
 ```
-
-
-The `r escapement_year` Nitinat River and tribs surveys began on `r min(nitinat.SIL[!is.na(nitinat.SIL$date),]$date)`. The most recent survey to date is `r max(nitinat.SIL[!is.na(nitinat.SIL$date),]$date)`. 
 
 <br>
 
-# Live and dead totals 
+
+<br>
+
+# **Water level and temperature**
+
+The following water data are compiled from the Nitinat Hydromet operated by South Coast Stock Assessment: http://pacfish.ca/wcviweather/Content%20Pages/Nitinat/WaterLevel.aspx
+
+As of `r Sys.Date()` the hydromet station has been inoperable since July 16, 2024. Work is underway to restore reporting before swims begin. For now, the following information is summarized from the backend database. Contact Katie with questions. 
+
+```{r fig.cap='Nitinat hydromet water level (m). Historical shaded area represents daily maximum and minimum recorded values over the time series, while the line represents the mean water level. Current year line represents daily mean water level (blue). Water level is recorded hourly at the Nitinat River Hatchery pumphouse.', fig.width=8, fig.height=6}
+ggplot()+
+  geom_ribbon(data=nitinat.water %>% 
+                filter(month %in% c("Aug","sep","Oct", "Nov") & year!=escapement_year) %>%
+                group_by(DOY) %>% 
+                summarize(max_lvl=max(Water.Level.m,na.rm=T), min_lvl=min(Water.Level.m,na.rm=T)),
+              aes(x=as.Date(DOY, origin="2021-12-31"), ymin=min_lvl, ymax=max_lvl), fill="gray80") +
+  geomtextpath:: geom_textline(data=nitinat.water %>% 
+                                filter(month %in% c("Aug","sep","Oct", "Nov") & year!=escapement_year) %>%
+                                group_by(DOY) %>% 
+                                summarize(mean_lvl_hist=mean(Water.Level.m,na.rm=T)) %>%
+                                mutate(label = paste0(min(nitinat.water$year), sep="-", escapement_year-1)),
+                              aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_lvl_hist, label=as.factor(label)), 
+                              colour="gray40", linewidth=1, show.legend=F, hjust=0.9, text_smoothing=30) +
+  geomtextpath:: geom_labelline(data=nitinat.water %>% 
+                                filter(month %in% c("Aug","sep","Oct", "Nov") & year==escapement_year) %>%
+                                group_by(DOY) %>% 
+                                summarize(mean_lvl=mean(Water.Level.m,na.rm=T)) %>% 
+                                mutate(label=escapement_year),
+                              aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_lvl, label=as.factor(label)), 
+                              colour="dodger blue", linewidth=1, show.legend=F) +
+  labs(y="Water level (m)") +
+  scale_colour_manual(values=c("dodger blue", "gray70")) +
+  scale_x_date(date_labels = "%b %d") +
+  scale_y_continuous(breaks=seq(0,10,by=0.5)) +
+  theme_bw() +
+  theme(axis.text = element_text(colour="black"),
+        axis.title = element_text(face="bold"),
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+```
+
+<br>
+
+The last downloaded water level was **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% pull(Water.Level.m)`m** on **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% pull(date)`** at **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% unite(col="time_stamp", time, stamp, sep=" ") %>% pull(time_stamp)`**. 
+
+<br>
+
+```{r fig.cap='Nitinat hydromet water and air temperature (C). Historical shaded area represents daily maximum and minimum recorded values over the time series, while the line represents the mean (gray). Current year line represents daily mean water and/or air temperature (green). Water and air temperature are recorded hourly at the Nitinat River Hatchery pumphouse.', fig.width=8, fig.height=6}
+ggpubr::ggarrange(
+  ggplot()+
+    geom_ribbon(data=nitinat.water %>% 
+                  filter(month %in% c("Aug","sep","Oct", "Nov") & year!=escapement_year) %>%
+                  group_by(DOY) %>% 
+                  summarize(max_temp=max(Water.temp.C,na.rm=T), min_temp=min(Water.temp.C,na.rm=T)),
+                aes(x=as.Date(DOY, origin="2021-12-31"), ymin=min_temp, ymax=max_temp), fill="gray80") +
+    geomtextpath:: geom_textline(data=nitinat.water %>% 
+                                   filter(month %in% c("Aug","sep","Oct", "Nov") & year!=escapement_year) %>%
+                                   group_by(DOY) %>% 
+                                   summarize(mean_temp_hist=mean(Water.temp.C,na.rm=T)) %>%
+                                   mutate(label = paste0(min(nitinat.water$year), sep="-", escapement_year-1)),
+                                 aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_temp_hist, label=as.factor(label)), 
+                                 colour="gray40", linewidth=1, show.legend=F, hjust=0.9, text_smoothing=30) +
+    geomtextpath:: geom_labelline(data=nitinat.water %>% 
+                                    filter(month %in% c("Aug","sep","Oct", "Nov") & year==escapement_year) %>%
+                                    group_by(DOY) %>% 
+                                    summarize(mean_temp=mean(Water.temp.C,na.rm=T)) %>% 
+                                    mutate(label=escapement_year),
+                                  aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_temp, label=as.factor(label)), 
+                                  colour="green", linewidth=1, show.legend=F, hjust=-0.1, text_smoothing=30) +
+    labs(y="Water temperature (C)") +
+    scale_colour_manual(values=c("green", "gray70")) +
+    scale_x_date(date_labels = "%b %d") +
+    #scale_y_continuous(breaks=seq(0,10,by=0.5)) +
+    theme_bw() +
+    theme(axis.text = element_text(colour="black"),
+          axis.title = element_text(face="bold"),
+          axis.title.x = element_blank(),
+          legend.title = element_blank()),
+  
+  
+  ggplot()+
+    geom_ribbon(data=nitinat.water %>% 
+                  filter(month %in% c("Aug","sep","Oct", "Nov") & year!=escapement_year) %>%
+                  group_by(DOY) %>% 
+                  summarize(max_temp=max(Air.Temp.Analog.C,na.rm=T), min_temp=min(Air.Temp.Analog.C,na.rm=T)),
+                aes(x=as.Date(DOY, origin="2021-12-31"), ymin=min_temp, ymax=max_temp), fill="gray80") +
+    geomtextpath:: geom_textline(data=nitinat.water %>% 
+                                   filter(month %in% c("Aug","sep","Oct", "Nov") & year!=escapement_year) %>%
+                                   group_by(DOY) %>% 
+                                   summarize(mean_temp_hist=mean(Air.Temp.Analog.C,na.rm=T)) %>%
+                                   mutate(label = paste0(min(nitinat.water$year), sep="-", escapement_year-1)),
+                                 aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_temp_hist, label=as.factor(label)), 
+                                 colour="gray40", linewidth=1, show.legend=F, hjust=0.9, text_smoothing=30) +
+    geomtextpath:: geom_labelline(data=nitinat.water %>% 
+                                    filter(month %in% c("Aug","sep","Oct", "Nov") & year==escapement_year) %>%
+                                    group_by(DOY) %>% 
+                                    summarize(mean_temp=mean(Air.Temp.Analog.C,na.rm=T)) %>% 
+                                    mutate(label=escapement_year),
+                                  aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_temp, label=as.factor(label)), 
+                                  colour="green", linewidth=1, show.legend=F, hjust=-0.1, text_smoothing=30) +
+    labs(y="Air temperature (C)") +
+    scale_colour_manual(values=c("green", "gray70")) +
+    scale_x_date(date_labels = "%b %d") +
+    #scale_y_continuous(breaks=seq(0,10,by=0.5)) +
+    theme_bw() +
+    theme(axis.text = element_text(colour="black"),
+          axis.title = element_text(face="bold"),
+          axis.title.x = element_blank(),
+          legend.title = element_blank()),
+  
+  nrow=2)
+```
+
+<br>
+
+<br>
+
+# **Live and Dead Totals** 
 
 <br> 
 
-```{r}
+The `r escapement_year` Nitinat River and tribs surveys will begin on September 4. 
+
+```{r eval=F}
 ggplot() +
   geom_point(data=nitinat.SIL %>% 
                filter(system=="Nitinat River") %>% 
@@ -95,19 +246,27 @@ ggplot() +
 
 <br>
 
-# Focal species live ~ historical 
+# **Live and Historical Raw Counts** 
 
-```{r}
+```{r fig.cap='Historical run timing for focal species in Nitinat River. Stat weeks along x axis denote the month and week of historical counts (e.g., stat week 81=First week of August, statweek 93=Third week of Sept, etc. Current year counts will show as blue points when populated.', fig.width=8, fig.height=6}
+
 ggplot() +
-  geom_bar(data=rtTabs %>% filter(Year<escapement_year),
-           aes(x=stat_week, y=count, group=Year), stat="identity", position="identity", alpha=0.2, fill="gray40") +
-  geom_bar(data=rtTabs %>% filter(Year==escapement_year),
-           aes(x=stat_week, y=count, group=Year), stat="identity", position="identity", alpha=0.6, fill="dodger blue") +  
-  facet_wrap(~species, scales="free") +
-  labs(x="", y="total live adults") +
+  geom_point(data=nit.rtStWk,
+           aes(x=stat_week, y=count, colour=plot_group, fill=plot_group, size=plot_group),
+           shape=21, alpha=0.6, stroke=1.5) +
+  scale_fill_manual(breaks=waiver(), values=c("gray60", "dodger blue")) +
+  scale_colour_manual(breaks=waiver(), values=c("gray60", "dodger blue")) +
+  scale_size_manual(breaks=waiver(), values=c(2, 4)) +
+  scale_y_continuous(labels=scales::comma) +
+  labs(x="Stat week", y="Live adults", fill="Year:", colour="Year:", size="Year:") +
   theme_bw() +
-  theme(axis.text = element_text(size=12),
-        legend.position = "none")
+  theme(legend.position = "bottom",
+        legend.box = "horizontal",
+        axis.title = element_text(face="bold"),
+        legend.key.spacing.x = unit(5,"mm")) +
+  facet_wrap(~stringr::str_to_title(species), nrow=3, scales="free_y") #+
+  #guides(colour = guide_legend(override.aes = list(size=3)),
+  #       fill = guide_legend(override.aes = list(size=3)))
 ```
 
 <br>
@@ -115,9 +274,12 @@ ggplot() +
 <br>
 
 
-# Live ~ water 
 
-```{r}
+
+```{r eval=F}
+# Live ~ water 
+# Plot counts with hydromet data to show pulses of fish into the system relative to rain events. 
+
 ggplot() +
   geom_line(data=nitinat.water %>% 
               group_by(date) %>% 
