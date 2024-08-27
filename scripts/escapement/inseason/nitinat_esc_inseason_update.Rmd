@@ -65,6 +65,35 @@ nitinat.water <-
 
 
 
+# San JUan water data for comparison---
+SJ.water <- full_join(
+  read.csv(file=list.files(path = here::here("data", "enviro"),
+                           pattern = "SANJUAN_historical*",
+                           full.names = TRUE),
+           skip=1) %>%
+    mutate(PARAM = case_when(PARAM==1 ~ "discharge (cms)",
+                             PARAM==2 ~ "level (m)"),
+           Date = lubridate::ymd(Date),
+           year = lubridate::year(Date),
+           month = lubridate::month(Date, label=T, abbr=T),
+           DOY = lubridate::yday(Date)),
+  
+    read.csv(file=list.files(path = here::here("data", "enviro"),
+                           pattern = "SANJUAN_realtime*",
+                           full.names = TRUE),
+           skip=9) %>%
+    mutate(Parameter = case_when(Parameter==46 ~ "level (m)"),
+           Date = lubridate::ymd(stringr::str_sub(string=Date..PST., start=1, end=10)),
+           time = stringr::str_sub(string=Date..PST., start=12, end=19),
+           year = lubridate::year(Date..PST.),
+           month = lubridate::month(Date..PST., label=T, abbr=T),
+           DOY = lubridate::yday(Date..PST.)) %>% 
+    rename(PARAM=Parameter,
+           Value=Value..m.)
+)
+
+
+
 # Run timing ---------------------------------
 nit.rtStWk <- readxl::read_excel(path=paste0(here::here("data", "escapement"), sep="/", 
                                              list.files(path=here::here("data", "escapement"),
@@ -104,24 +133,24 @@ As of `r Sys.Date()` the hydromet station has been inoperable since July 16, 202
 ```{r fig.cap='Nitinat hydromet water level (m). Historical shaded area represents daily maximum and minimum recorded values over the time series, while the line represents the mean water level. Current year line represents daily mean water level (blue). Water level is recorded hourly at the Nitinat River Hatchery pumphouse.', fig.width=8, fig.height=6}
 ggplot()+
   geom_ribbon(data=nitinat.water %>% 
-                filter(month %in% c("Aug","sep","Oct", "Nov") & year!=escapement_year) %>%
+                filter(month %in% c("Aug","sep","Oct", "Nov") & year!=escapement_year & Water.Level.m>0.1) %>%
                 group_by(DOY) %>% 
                 summarize(max_lvl=max(Water.Level.m,na.rm=T), min_lvl=min(Water.Level.m,na.rm=T)),
               aes(x=as.Date(DOY, origin="2021-12-31"), ymin=min_lvl, ymax=max_lvl), fill="gray80") +
   geomtextpath:: geom_textline(data=nitinat.water %>% 
-                                filter(month %in% c("Aug","sep","Oct", "Nov") & year!=escapement_year) %>%
+                                filter(month %in% c("Aug","sep","Oct", "Nov") & year!=escapement_year & Water.Level.m>0.1) %>%
                                 group_by(DOY) %>% 
                                 summarize(mean_lvl_hist=mean(Water.Level.m,na.rm=T)) %>%
                                 mutate(label = paste0(min(nitinat.water$year), sep="-", escapement_year-1)),
                               aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_lvl_hist, label=as.factor(label)), 
                               colour="gray40", linewidth=1, show.legend=F, hjust=0.9, text_smoothing=30) +
   geomtextpath:: geom_labelline(data=nitinat.water %>% 
-                                filter(month %in% c("Aug","sep","Oct", "Nov") & year==escapement_year) %>%
+                                filter(month %in% c("Aug","sep","Oct", "Nov") & year==escapement_year & Water.Level.m>0.1) %>%
                                 group_by(DOY) %>% 
                                 summarize(mean_lvl=mean(Water.Level.m,na.rm=T)) %>% 
                                 mutate(label=escapement_year),
                               aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_lvl, label=as.factor(label)), 
-                              colour="dodger blue", linewidth=1, show.legend=F) +
+                              colour="dodger blue", linewidth=1, hjust=-0.1, show.legend=F) +
   labs(y="Water level (m)") +
   scale_colour_manual(values=c("dodger blue", "gray70")) +
   scale_x_date(date_labels = "%b %d") +
@@ -204,6 +233,59 @@ ggpubr::ggarrange(
   
   nrow=2)
 ```
+
+<br>
+
+<br>
+
+## Environment Canada forecast 
+
+While there is no official flow forecast for the Nitinat River, the San Juan River Environment Canada COFFEE forecast can be used as a proxy for Nitinat River as both systems exhibit similar seasonal flow patterns.  
+
+```{r}
+knitr::include_url("http://bcrfc.env.gov.bc.ca/fallfloods/coffee/08HA010.PDF")
+```
+
+<br>
+
+```{r fig.cap='Summer/fall water level at Nitinat (blue) and San Juan (gray) from 2021-present. Shaded region represents daily maximum and minimum levels while solid line indicates daily average among all years. San Juan water level from Environment Canada, Nitinat from South Coast Stock assessment hydromet.'}
+ggplot()+
+  geom_ribbon(data=SJ.water %>% 
+                filter(month %in% c("Aug","sep","Oct", "Nov") & year%in%c(2021:escapement_year) & PARAM=="level (m)")  %>%
+                group_by(DOY) %>% 
+                summarize(max_lvl=max(Value,na.rm=T), min_lvl=min(Value,na.rm=T)),
+              aes(x=as.Date(DOY, origin="2021-12-31"), ymin=min_lvl, ymax=max_lvl), fill="gray80", alpha = 0.7) +
+  geomtextpath:: geom_textline(data=SJ.water %>% 
+                                 filter(month %in% c("Aug","sep","Oct", "Nov") & year%in%c(2021:escapement_year) & 
+                                          PARAM=="level (m)")  %>%
+                                 group_by(DOY) %>% 
+                                 summarize(mean_lvl_hist=mean(Value,na.rm=T)) %>%
+                                 mutate(label = paste0("San Juan ", min(nitinat.water$year), sep="-", escapement_year)),
+                               aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_lvl_hist, label=as.factor(label)), 
+                               colour="gray60", linewidth=1, show.legend=F, hjust=0.2, text_smoothing=30, alpha=0.8) +
+  geom_ribbon(data=nitinat.water %>% 
+                filter(month %in% c("Aug","sep","Oct", "Nov") & Water.Level.m>0.1) %>%
+                group_by(DOY) %>% 
+                summarize(max_lvl=max(Water.Level.m,na.rm=T), min_lvl=min(Water.Level.m,na.rm=T)),
+              aes(x=as.Date(DOY, origin="2021-12-31"), ymin=min_lvl, ymax=max_lvl), fill="dodger blue", alpha=0.4) +
+  geomtextpath:: geom_textline(data=nitinat.water %>% 
+                                 filter(month %in% c("Aug","sep","Oct", "Nov") & Water.Level.m>0.1) %>%
+                                 group_by(DOY) %>% 
+                                 summarize(mean_lvl=mean(Water.Level.m,na.rm=T)) %>% 
+                                 mutate(label = paste0("Nitinat ", min(nitinat.water$year), sep="-", escapement_year)),
+                               aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_lvl, label=as.factor(label)), 
+                               colour="dodger blue", linewidth=1, show.legend=F, hjust=0.17, alpha=0.8) +
+  labs(y="Water level (m)") +
+  scale_colour_manual(values=c("dodger blue", "gray70")) +
+  scale_x_date(date_labels = "%b %d") +
+  scale_y_continuous(breaks=seq(0,10,by=0.5)) +
+  theme_bw() +
+  theme(axis.text = element_text(colour="black"),
+        axis.title = element_text(face="bold"),
+        axis.title.x = element_blank(),
+        legend.title = element_blank())
+```
+
 
 <br>
 
