@@ -19,13 +19,19 @@ output:
     #   value: ""
     #   input: password
 
-knitr::opts_chunk$set(echo=F, warning=F, message=F)
 
+# Set up -------------------------- 
+knitr::opts_chunk$set(echo=F, warning=F, message=F)
+options(scipen = 9999)
+
+
+# Load libraries -------------------------- 
 library(tidyverse)
-#library(readxl)
 #library(kableExtra)
 #library(bookdown)
 
+
+# Define helpers -------------------------- 
 "%notin%" <- Negate("%in%")
 
 
@@ -83,29 +89,27 @@ write.csv(by.esc, "C:/Users/DAVIDSONKA/Documents/ANALYSIS/Area21-22/outputs/area
 
 # ====================== TIMING data ====================== 
 
-nit.timing <- full_join(
-  read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/run timing tables (updated).xlsx", sheet="Nitinat", range="A4:W32") %>% 
-    rename(year=`...1`) %>%
-    mutate(`92` = case_when(grepl("-", `92`) ~ 1500, TRUE~as.numeric(`92`)),
-           species="Chinook") %>%
-    pivot_longer(`81`:`124`, names_to = "stat_week", values_to = "count"),
-  
-  read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/run timing tables (updated).xlsx", sheet="Nitinat", range="A38:W66") %>% 
-    rename(year=`...1`) %>%
-    mutate(`92` = case_when(grepl("-", `92`) ~ 1500, TRUE~as.numeric(`92`)),
-           species="Coho") %>%
-    pivot_longer(`81`:`124`, names_to = "stat_week", values_to = "count")
-) %>% 
-  full_join(.,
-            read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/run timing tables (updated).xlsx", sheet="Nitinat", range="A72:W100") %>% 
-              rename(year=`...1`) %>%
-              mutate(`92` = case_when(grepl("-", `92`) ~ 1500, TRUE~as.numeric(`92`)),
-                     species="Chum") %>%
-              pivot_longer(`81`:`124`, names_to = "stat_week", values_to = "count")
-            ) %>%
+nit.rtStWk <- readxl::read_excel("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/run timing tables (updated).xlsx", 
+                                    sheet="Nitinat", guess_max=10000, trim_ws=T, range=cell_limits(c(4, 1), c(NA, NA))) %>% 
+  select(-c(`...24`:`...75`)) %>%
+  rename(year=`...1`) %>% 
+  filter(if_any(everything(), ~ !is.na(.)), !grepl("Table", year), !grepl("Year", year), !is.na(year)) %>% 
+  mutate(species = c(rep("chinook", nrow(.)/3), rep("coho", nrow(.)/3), rep("chum", nrow(.)/3)),
+         `92` = case_when(`92`=="1000-2000" ~ as.numeric(1500),
+                          TRUE ~ as.numeric(`92`)),
+         across(c(`81`:`124`), ~as.numeric(.)),
+         #plot_group = case_when(year==analysis_year ~ year,
+        #                        year!=analysis_year ~ paste0(min(year), sep="-", (analysis_year-1)))
+        ) %>%
+  pivot_longer(cols = c(`81`:`124`), names_to = "stat_week", values_to = "count") %>% 
   print()
-nit.timing$stat_week <- factor(nit.timing$stat_week, levels=c("81","82","83","84","91","92","93","94","101","102","103","104","105",
-                                                              "111","112","113","114","115","121","122","123","124", ordered=T))
+
+nit.rtStWk$stat_week <- factor(nit.rtStWk$stat_week,
+                               levels=c("81","82","83","84",
+                                        "91","92","93","94",
+                                        "101","102","103","104","105",
+                                        "111","112","113","114","115",
+                                        "121","122","123","124", ordered=T))
 
 
 
@@ -208,7 +212,7 @@ Status snapshot:
 
 h (see Figure \@ref(fig:a21-fig))
 
-```{r a21-fig, fig.cap='Spawner estimates for salmon in Area 21. Vertical dashed lines indicate periods of enhancement. Long-term averages (solid gray line) are calculated across the whole time series since enhancement began. Recent averages (black line) are calculated from the most recent 4 years of complete data. Data from NuSEDS.'}
+```{r a21-fig, fig.cap='Population-level spawner estimates for salmon in Area 21. Data from NuSEDS.'}
 # FIGURE: All populations Area 21 ----------------------- 
 ggplot() +
   # --- Enhancement start vertical line:
@@ -221,10 +225,10 @@ ggplot() +
   #             summarize(mean=round(mean(n,na.rm=T),0)),
   #           aes(yintercept=mean), size=1, linetype="solid", colour="black") +
   # --- Plot NuSEDS escapement data:
-  geom_bar(data=a21_22.esc %>% filter(Area==21, est_type %in% c("Unspecified Return", "Natural Adult Spawners", "Adult Broodstock Removals"),
-                                  !is.na(estimate)),
-           aes(x=analysis_year, y=as.numeric(estimate), fill=est_type, colour=est_type), stat="identity", alpha=0.8, width=0.9, size=0.3) +
-  scale_x_continuous(breaks=seq(min(a21_22.esc$analysis_year), max(a21_22.esc$analysis_year), by=5)) +
+  geom_bar(data=a2122_nuseds_escapement %>% 
+             filter(Area==21, est_type %in% c("Unspecified Return", "Natural Adult Spawners", "Adult Broodstock Removals"),
+                    !is.na(estimate)),
+           aes(x=year, y=as.numeric(estimate), fill=est_type, colour=est_type), stat="identity", alpha=0.8, width=0.9, size=0.3) +
   scale_fill_manual(breaks = c("Natural Adult Spawners", "Adult Broodstock Removals", "Unspecified Return"), 
                     values=c("dodger blue","orange", "gray")) +
   scale_colour_manual(breaks = c("Natural Adult Spawners", "Adult Broodstock Removals", "Unspecified Return"), 
@@ -234,19 +238,41 @@ ggplot() +
   theme(axis.text = element_text(colour="black",size=11),
         axis.text.x = element_text(angle=45,hjust=1),
         axis.title = element_text(face="bold",size=13),
-        panel.grid.major.y = element_line(colour="gray70"),
-        panel.grid.minor.y = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
         legend.title = element_blank(),
         legend.text = element_text(size=10),
         legend.position = c(0.7,0.1),
-        #legend.direction = "horizontal",
         legend.background = element_blank(),
         strip.text = element_text(size=10)) +
   guides(colour = guide_legend(override.aes=list(colour=NA))) +
   facet_wrap(~Population, scales="free_y")
 ```
+
+<br>
+
+```{r CU-fig, fig.cap='Conservation Unit (CU) level spawner estimates. Data from NuSEDS.'}
+ggplot() +
+  geom_bar(data=a2122_nuseds_escapement %>% 
+             filter(est_type %in% c("Unspecified Return", "Natural Adult Spawners", "Adult Broodstock Removals"),
+                    !is.na(estimate)),
+           aes(x=year, y=as.numeric(estimate), fill=est_type, colour=est_type), stat="identity", alpha=0.8, width=0.9, size=0.3) +
+  scale_fill_manual(breaks = c("Natural Adult Spawners", "Adult Broodstock Removals", "Unspecified Return"), 
+                    values=c("dodger blue","orange", "gray")) +
+  scale_colour_manual(breaks = c("Natural Adult Spawners", "Adult Broodstock Removals", "Unspecified Return"), 
+                      values=c("dodger blue","orange", "gray")) +
+  labs(x="Return Year", y="Number of Fish") +
+  theme_bw() +
+  theme(axis.text = element_text(colour="black",size=11),
+        axis.text.x = element_text(angle=45,hjust=1),
+        axis.title = element_text(face="bold",size=13),
+        legend.title = element_blank(),
+        legend.text = element_text(size=10),
+        legend.position = c(0.7,0.1),
+        legend.background = element_blank(),
+        strip.text = element_text(size=10)) +
+  guides(colour = guide_legend(override.aes=list(colour=NA))) +
+  facet_wrap(~paste0(`Conservation Unit Name`, sep=" - ", Species), scales="free_y")
+```
+
 
 <br>
 
