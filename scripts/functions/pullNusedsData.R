@@ -23,19 +23,19 @@ runNuSEDSQuery <- function (query_doc, config_file = "saaWeb.config", user_name 
 
 
 # ============================ 2. EXTRACT ESCAPEMENT DATA ============================
-a2122_nuseds_escapement <- runNuSEDSQuery(query_doc=here("scripts", "json", "nuseds_esc_query_A2122.json"), 
-                                 config_file=here("saaWeb.config")) %>%
-  mutate(across(c(`Analysis Year`, `Max Estimate`:`Natural Adult Spawners`, 
+a2122_nuseds_escapement <- runNuSEDSQuery(query_doc=here::here("scripts", "json", "nuseds_esc_query_A21-22.json"), 
+                                 config_file=here::here("saaWeb.config")) %>%
+  mutate(across(c(`Analysis Year`, `Max Estimate`:`Natural Adult Spawners`,
                   `Other Adults Removals`:`Total Jack Return River`), as.numeric)) %>%
   mutate(`Total Adult Return River` = case_when(is.na(`Total Adult Return River`) ~ `Max Estimate`,
                                                 TRUE ~ `Total Adult Return River`),
          `Adult Broodstock Removals` = case_when(is.na(`Adult Broodstock Removals`) ~ `Total Broodstock Removals`,
-                                                 TRUE ~ `Adult Broodstock Removals`)) %>% 
-  pivot_longer(cols=c("Max Estimate":"Unspecified Return", "Other Removals":"Natural Adult Spawners", 
-                      "Other Adults Removals":"Total Jack Return River"), 
-               names_to = "est_type", values_to = "estimate") %>% 
+                                                 TRUE ~ `Adult Broodstock Removals`)) %>%
+  pivot_longer(cols=c("Max Estimate":"Unspecified Return", "Other Removals":"Natural Adult Spawners",
+                      "Other Adults Removals":"Total Jack Return River"),
+               names_to = "est_type", values_to = "estimate") %>%
   rename(waterbody_name=`Waterbody Name`,
-         year=`Analysis Year`) %>% 
+         year=`Analysis Year`) %>%
   mutate(source="NuSEDS")
 
 
@@ -43,7 +43,7 @@ a2122_nuseds_escapement <- runNuSEDSQuery(query_doc=here("scripts", "json", "nus
 # ============================ 3: EXPORT ============================
 
 # Export to github repo ------------------------
-writexl::write_xlsx(a2122_nuseds_escapement, here("outputs", 
+writexl::write_xlsx(a2122_nuseds_escapement, here::here("outputs", 
                                                   paste0("R_OUT - Area21-22_Escapement_allSpp-allYrs ", 
                                                          min(a2122_nuseds_escapement$year), 
                                                          "-", 
