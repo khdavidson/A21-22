@@ -213,6 +213,11 @@ Status snapshot:
 h (see Figure \@ref(fig:a21-fig))
 
 ```{r a21-fig, fig.cap='Population-level spawner estimates for salmon in Area 21. Data from NuSEDS.'}
+
+pdf(file = here::here("outputs", "figures", "Area 21 escapement - populations.pdf"),   
+    width = 14, # The width of the plot in inches
+    height = 8.5) # The height of the plot in inches
+
 # FIGURE: All populations Area 21 ----------------------- 
 ggplot() +
   # --- Enhancement start vertical line:
@@ -233,10 +238,11 @@ ggplot() +
                     values=c("dodger blue","orange", "gray")) +
   scale_colour_manual(breaks = c("Natural Adult Spawners", "Adult Broodstock Removals", "Unspecified Return"), 
                       values=c("dodger blue","orange", "gray")) +
+  scale_x_continuous(breaks=seq(0,3000, by=3)) +
   labs(x="Return Year", y="Number of salmon in Area 21 populations") +
   theme_bw() +
   theme(axis.text = element_text(colour="black",size=11),
-        axis.text.x = element_text(angle=45,hjust=1),
+        axis.text.x = element_text(angle=45,hjust=1, size=9),
         axis.title = element_text(face="bold",size=13),
         legend.title = element_blank(),
         legend.text = element_text(size=10),
@@ -245,12 +251,19 @@ ggplot() +
         strip.text = element_text(size=10)) +
   guides(colour = guide_legend(override.aes=list(colour=NA))) +
   facet_wrap(~Population, scales="free_y")
+
+dev.off()
 ```
 
 <br>
 
 ```{r a22-fig, fig.cap='Spawners estimates for salmon in Area 22. Vertical dashed lines indicate periods of enhancement. Long-term averages (solid gray line) are calculated across the whole time series since enhancement began. Recent averages (black line) are calculated from the most recent 4 years of complete data. Data from NuSEDS.'}
-# FIGURE: All populations Area 21 ----------------------- 
+
+pdf(file = here::here("outputs", "figures", "Area 22 escapement - populations.pdf"),   
+    width = 14, # The width of the plot in inches
+    height = 8.5) # The height of the plot in inches
+
+# FIGURE: All populations Area 22 ----------------------- 
 ggplot() +
   # --- Enhancement start vertical line:
   #geom_vline(data=sj.releases.sep%>%group_by(SPECIES_NAME)%>%summarize(start=min(BROOD_YEAR))%>%rename(Species=SPECIES_NAME)%>%
@@ -270,10 +283,11 @@ ggplot() +
                     values=c("dodger blue","orange", "gray")) +
   scale_colour_manual(breaks = c("Natural Adult Spawners", "Adult Broodstock Removals", "Unspecified Return"), 
                       values=c("dodger blue","orange", "gray")) +
+  scale_x_continuous(breaks=seq(0,3000, by=5)) +
   labs(x="Return Year", y="Number of salmon in Area 22 populations") +
   theme_bw() +
   theme(axis.text = element_text(colour="black",size=11),
-        axis.text.x = element_text(angle=45,hjust=1),
+        axis.text.x = element_text(angle=45,hjust=1, size=9),
         axis.title = element_text(face="bold",size=13),
         legend.title = element_blank(),
         legend.text = element_text(size=10),
@@ -282,11 +296,18 @@ ggplot() +
         strip.text = element_text(size=10)) +
   guides(colour = guide_legend(override.aes=list(colour=NA))) +
   facet_wrap(~Population, scales="free_y")
+
+dev.off()
 ```
 
 <br>
 
 ```{r CU-fig, fig.cap='Conservation Unit (CU) level spawner estimates. Data from NuSEDS.'}
+
+pdf(file = here::here("outputs", "figures", "Area 21-22 escapement - CU.pdf"),   
+    width = 14, # The width of the plot in inches
+    height = 8.5) # The height of the plot in inches
+
 ggplot() +
   geom_bar(data=a2122_nuseds_escapement %>% 
              filter(est_type %in% c("Unspecified Return", "Natural Adult Spawners", "Adult Broodstock Removals") &
@@ -299,10 +320,11 @@ ggplot() +
                     values=c("dodger blue","orange", "gray")) +
   scale_colour_manual(breaks = c("Natural Adult Spawners", "Adult Broodstock Removals", "Unspecified Return"), 
                       values=c("dodger blue","orange", "gray")) +
+  scale_x_continuous(breaks=seq(0,3000,by=3)) +
   labs(x="Return Year", y="Number of salmon in Area 21-22 CUs") +
   theme_bw() +
   theme(axis.text = element_text(colour="black",size=11),
-        axis.text.x = element_text(angle=45,hjust=1),
+        axis.text.x = element_text(angle=45,hjust=1, size=9),
         axis.title = element_text(face="bold",size=13),
         legend.title = element_blank(),
         legend.text = element_text(size=10),
@@ -311,6 +333,8 @@ ggplot() +
         strip.text = element_text(size=10)) +
   guides(colour = guide_legend(override.aes=list(colour=NA))) +
   facet_wrap(~CUspp, scales="free_y")
+
+dev.off()
 ```
 
 <br>
