@@ -9,35 +9,38 @@ output:
     toc_collapsed: false 
     toc_depth: 5
     number_sections: true
-params:
-    password:
-      label: "Enter computer password"
-      value: ""
-      input: password
 ---
 
 ```{r setup, include=FALSE}
+# from YAML
+# params:
+    # password:
+    #   label: "Enter computer password"
+    #   value: ""
+    #   input: password
+
 knitr::opts_chunk$set(echo=F, warning=F, message=F)
 
-#library(here)
 library(tidyverse)
-library(readxl)
-library(kableExtra)
-library(bookdown)
+#library(readxl)
+#library(kableExtra)
+#library(bookdown)
 
 "%notin%" <- Negate("%in%")
 
-#source("C:/Users/DAVIDSONKA/Documents/ANALYSIS/San_Juan/san_juan_CN/scripts/functions/getExtractorData.R", local = knitr::knit_global())
-source("C:/Users/DAVIDSONKA/Documents/ANALYSIS/San_Juan/san_juan_CN/scripts/functions/getMrpPadsData.R", local = knitr::knit_global())
-source("C:/Users/DAVIDSONKA/Documents/ANALYSIS/San_Juan/san_juan_CN/scripts/functions/getNusedsData.R", local = knitr::knit_global())
 
 
 # ====================== ENUMERATION data ====================== 
+# Option 1. Re-run source (not in knitr) for annual updates ------------------------
+# source(here::here("scripts", "functions", "pullNusedsData.R"))
+  # saves as a2122_nuseds_escapement
 
-a21_22.esc <- getNuSEDS("C:/Users/DAVIDSONKA/Documents/ANALYSIS/Area21-22/A21-22/scripts/json/nuseds_esc_query_A21-22.json", password=NULL) %>% 
-    mutate(across(c(`Analysis Year`, `Max Estimate`:`Natural Adult Spawners`, 
-                    `Other Adults Removals`:`Total Jack Return River`), as.numeric)) %>%
-  print()
+# Option 2. Load dumped data ------------------------
+a2122_nuseds_escapement <- readxl::read_excel(path=here::here("outputs", 
+                                                              list.files(path=here::here("outputs"), 
+                                                                         pattern="R_OUT - Area21-22_Escapement_allSpp-allYrs*")),
+                                              sheet="Sheet1")
+
 
 
 # BY escapements ------------------------
