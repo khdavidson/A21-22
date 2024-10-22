@@ -155,7 +155,7 @@ ggplot()+
                                 summarize(mean_lvl=mean(Water.Level.m,na.rm=T)) %>% 
                                 mutate(label=escapement_year),
                               aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_lvl, label=as.factor(label)), 
-                              colour="dodger blue", linewidth=1, hjust=0.1, show.legend=F) +
+                              colour="dodger blue", linewidth=1, hjust=0.05, show.legend=F) +
   labs(y="Water level (m)") +
   scale_colour_manual(values=c("dodger blue", "gray70")) +
   scale_x_date(date_labels = "%b %d") +
