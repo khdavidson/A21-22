@@ -169,16 +169,27 @@ nrh.cn <- list.files(paste0(path="//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ES
 # ============================= Load AUXILIARY data ============================
 
 # Enviro ----------------------------
-nit.water <- list.files(here::here("data", "enviro"), pattern = "NitinatWaterLevelHydrometData", full.names = T) %>% 
-  map(~readxl::read_excel(path=.x, sheet="Exported Data", guess_max=20000)) %>%
-  purrr::list_rbind() %>%
-  mutate(gauge_m = case_when(grepl("Estimated", `Staff Gauge(mH20)`) ~ NA,
-                             TRUE ~ as.numeric(`Staff Gauge(mH20)`)),
-         sensor_depth = case_when(grepl("Estimated", `Sensor Depth(mH20)`) ~ NA,
-                             TRUE ~ as.numeric(`Sensor Depth(mH20)`)),
-         date = as.Date(Time)) %>% 
-  filter(#date<= as.Date("2023-11-08"), 
-         gauge_m>0.000)
+nitinat.water <- 
+  lapply(list.files(path = here::here("data", "enviro"),
+                    pattern = "NitinatWaterLevelHydrometData_20*",
+                    full.names = TRUE),
+         read.csv, skip=1) %>%
+  do.call("rbind",.) %>%
+  separate(Received, sep=" ", c("date", "time", "stamp")) %>%
+  mutate(date2 = case_when(is.na(TL.Battery.V) ~ lubridate::mdy(date),
+                          !is.na(TL.Battery.V) ~ lubridate::dmy(date)),
+        year = lubridate::year(date2),
+        month = lubridate::month(date2, label=T, abbr=T),
+        DOY = lubridate::yday(date2),
+        Water.Level.m = case_when(grepl("\\*", Water.Level.m) ~ NA,
+                                  TRUE ~ as.numeric(Water.Level.m)),
+        label_group = case_when(year<analysis_year ~ "Historical",
+                                        year==analysis_year ~ as.character(year)),
+        hour = as.numeric(stringr::str_sub(stringr::str_pad(time, width=5, pad = "0"), 1,2)),
+        hour = case_when(hour==12 & stamp=="AM" ~ 0,
+                         TRUE ~ hour)) %>%
+  print()
+
 
 
 
