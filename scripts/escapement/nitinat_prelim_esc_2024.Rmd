@@ -106,7 +106,7 @@ escEstSpp <- readxl::read_excel(path=paste0(here::here("data", "escapement", "pr
   relocate(JackMidResidenceTime_R, .before = JackLongResidenceTime) %>% 
   relocate(AdultExpAUCMidValue_R, .before=AdultExpAUCHighValue) %>% 
   relocate(JackExpAUCMidValue_R, .before=JackExpAUCHighValue) 
-12
+
 
 # EscEstAUCResults table --------------------- 
 escEstAUC <- readxl::read_excel(path=paste0(here::here("data", "escapement", "prelim-inseason", 
@@ -1397,11 +1397,12 @@ Figure: Expanded live adult Chinook (bars) and carcasses (black line). Bar fill 
                          Holding = sum(`adults # holding`)) %>% 
                pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
              aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
-             stat="identity", position="stack", alpha=0.7, size=1) +
+             stat="identity", position="stack", alpha=0.7, width=2, size=1) +
     geom_bar(data=nrh.cn %>% 
                filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot)) %>% 
-               group_by(`Activity Start Date`) %>% summarize(n=sum(TotalCount)),
-             aes(x=as.Date(`Activity Start Date`), y=n*1), fill="black", stat="identity", alpha=0.7) +
+               group_by(`Activity Start Date`) %>% 
+               summarize(n=sum(TotalCount)),
+             aes(x=as.Date(`Activity Start Date`), y=n*1), fill="black", stat="identity", alpha=0.5) +
     scale_y_continuous(sec.axis = sec_axis(~./1, name="Swim ins")) +
     scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
     scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
@@ -1411,6 +1412,10 @@ Figure: Expanded live adult Chinook (bars) and carcasses (black line). Bar fill 
 ```
 
 Figure: Expanded adult Chinook counts (large bars) and swim-ins (narrow black bars). Adult bar fill colours indicate behaviour (spawning=gray, holding=white), bar line colour indicates river segment (lower=pink, upper=blue).
+
+<br>
+
+Total number of swim-ins this year is: `r nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot)) %>% summarize(sum(TotalCount))`, of which `r nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass!="Jack") %>% summarize(sum(TotalCount))` were adults. 
 
 <br>
 
@@ -1496,28 +1501,32 @@ ggpubr::ggarrange(
     scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
     scale_x_date(date_breaks="5 day", date_labels="%b %d") +
     labs(x="", y="Fish-days", fill="Survey method", colour="Survey method") +
-    theme_bw(),
+    theme_bw()
+  
+  #,
   
   
-  # THIS PLOT TO VISUALIZE ANY SURVEYS YOU WANT TO POTENTIALLY OMIT: 
-  ggplot() +
-    geom_line(data=escEstAUC %>% 
-                mutate(dateplot = lubridate::ymd(stringr::str_sub(DateRange, start=14, end=23))) %>%
-                filter(ShortSpecies=="CN", AREA!="20", grepl("Nitinat River, Nitinat Lake", SystemName)) %>% 
-                filter(dateplot!="2024/10/23"), 
-              aes(x=as.Date(dateplot), y=ExpAdultFishDays)) +
-    geom_point(data=escEstAUC %>% 
-                 mutate(dateplot = lubridate::ymd(stringr::str_sub(DateRange, start=14, end=23))) %>%
-                 filter(ShortSpecies=="CN", AREA!="20", grepl("Nitinat River, Nitinat Lake", SystemName)) %>% 
-                 filter(dateplot!="2024/10/23"), 
-               aes(x=as.Date(dateplot), y=ExpAdultFishDays, fill=method, colour=method), shape=21, size=4) +
-    scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-    scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
-    scale_x_date(date_breaks="5 day", date_labels="%b %d") +
-    labs(x="", y="Fish-days", fill="Survey method", colour="Survey method") +
-    theme_bw(),
+  # # THIS PLOT TO VISUALIZE ANY SURVEYS YOU WANT TO POTENTIALLY OMIT (flight or swim): ---- not relevant for 2024
+  # ggplot() +
+  #   geom_line(data=escEstAUC %>% 
+  #               mutate(dateplot = lubridate::ymd(stringr::str_sub(DateRange, start=14, end=23))) %>%
+  #               filter(ShortSpecies=="CN", AREA!="20", grepl("Nitinat River, Nitinat Lake", SystemName)) %>% 
+  #               filter(dateplot!="2024/10/23"), 
+  #             aes(x=as.Date(dateplot), y=ExpAdultFishDays)) +
+  #   geom_point(data=escEstAUC %>% 
+  #                mutate(dateplot = lubridate::ymd(stringr::str_sub(DateRange, start=14, end=23))) %>%
+  #                filter(ShortSpecies=="CN", AREA!="20", grepl("Nitinat River, Nitinat Lake", SystemName)) %>% 
+  #                filter(dateplot!="2024/10/23"), 
+  #              aes(x=as.Date(dateplot), y=ExpAdultFishDays, fill=method, colour=method), shape=21, size=4) +
+  #   scale_fill_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  #   scale_colour_manual(breaks=c("heli", "snorkel"), values=c("orange", "blue")) +
+  #   scale_x_date(date_breaks="5 day", date_labels="%b %d") +
+  #   labs(x="", y="Fish-days", fill="Survey method", colour="Survey method") +
+  #   theme_bw(),
   
-  nrow=2)
+  #nrow=2
+  
+  )
 ```
 
 Figure: AUC curve for Nitinat mainstem Chinook.  
@@ -1546,12 +1555,13 @@ AUCdataTable %>%
 
 <br>
 
-Table: Escapement estimates for each system.   
+Table: Escapement estimate options (AUC/PL+D) for each system.   
 
 ```{r}
 escEstSpp %>% 
   filter(ShortSpecies=="CN", AREA!="20") %>% 
-  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, contains("Raw"), contains("FishDays"))) %>% 
+  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, 
+            contains("Raw"), contains("FishDays"))) %>% 
   relocate(c(SystemName, AREA), .before=ShortSpecies) %>% 
   rename(FinalAdultEstimate = AdultNaturalReco,
          FinalJackEstimate = JackNaturalReco) %>% 
@@ -1566,7 +1576,10 @@ escEstSpp %>%
 
 ### Estimate decision:   
 
-**FIL IN**
+For 2024, suggest that swim-ins be subtracted from the mid-point AUC estimate to get to ~10k spawners ultimately. NRH observations fall closer to ~10-11k, and we only saw about 9k adults on swims. The Hatchery also struggled to get broodstock this year and did not meet their brood targets, whereas last year they had no issue and the escapement estimated landed around ~15k. Therefore escapement this year should be considerably lower. 
+Looking at the swim-in timing and spawning, spawning started up after most of the fish swam into the hatchery, which suggests some of the mainstem fish counted on Sept 19 (lower) and even Oct 1 (minimal spawning in the lower). Most swim-ins were into the hatchery by the Oct 11 survey which had a lot of spawning. I would recommend subtracting the swim-ins - even the late bump ~Oct 19 because i think the AUC curve covers this component within the area integrated under the curve.
+Given this, if we took the mid point estimate of `r escEstSpp %>% filter(ShortSpecies=="CN", SystemName=="Nitinat River, Nitinat Lake") %>% group_by(AdultExpAUCMidValue_R) %>% summarize() %>% pull()` minus `r nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass!="Jack") %>% summarize(sum(TotalCount)) %>% pull()` adult swim-ins leaves `r (escEstSpp %>% filter(ShortSpecies=="CN", SystemName=="Nitinat River, Nitinat Lake") %>% group_by(AdultExpAUCMidValue_R) %>% summarize() %>% pull()) - (nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass!="Jack") %>% summarize(sum(TotalCount)) %>% pull())` natural adult spawners. 
+Likewise, jacks would end up being `r (escEstSpp %>% filter(ShortSpecies=="CN", SystemName=="Nitinat River, Nitinat Lake") %>% group_by(JackExpAUCMidValue_R) %>% summarize() %>% pull()) - (nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass=="Jack") %>% summarize(sum(TotalCount)) %>% pull())` natural jack spawners. 
 *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*  
 
 <br>
