@@ -136,20 +136,24 @@ nrh.cn <- list.files(paste0(path="//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ES
          ParentActivityType=`Parent Activity Type`, 
          SourceLocationType=`Source Location Type`,
          TotalCount=`Total Count`,
-         MaturityClass=`Maturity Class`)
+         MaturityClass=`Maturity Class`) %>% 
+  mutate(MaturityClassGroup = case_when(MaturityClass=="Jack" ~ "Jack",
+                                        TRUE ~ "Adult"))
 
 # CHUM:
-# nrh.cm <- list.files(paste0(path="//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/",
-#                              analysis_year,
-#                              "/SILs/Area 21-22/"),
-#                       pattern = "Adult_Management - Nitinat CM", full.names = T) %>% 
-#   map(~readxl::read_excel(path=.x, trim_ws=T, guess_max=20000, sheet="Adult Management", skip=1), id="path") %>% 
-#   list_rbind() %>% 
-#   rename(InventoryLot=`Inventory Lot`, 
-#          ParentActivityType=`Parent Activity Type`, 
-#          SourceLocationType=`Source Location Type`,
-#          TotalCount=`Total Count`,
-#          MaturityClass=`Maturity Class`)
+nrh.cm <- list.files(paste0(path="//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/",
+                             analysis_year,
+                             "/SILs/Area 21-22/"),
+                      pattern = "Adult_Management - Nitinat CM", full.names = T) %>%
+  map(~readxl::read_excel(path=.x, trim_ws=T, guess_max=20000, sheet="Adult Management", skip=1), id="path") %>%
+  list_rbind() %>%
+  rename(InventoryLot=`Inventory Lot`,
+         ParentActivityType=`Parent Activity Type`,
+         SourceLocationType=`Source Location Type`,
+         TotalCount=`Total Count`,
+         MaturityClass=`Maturity Class`) %>% 
+  mutate(MaturityClassGroup = case_when(MaturityClass=="Jack" ~ "Jack",
+                                        TRUE ~ "Adult"))
 
 
 # COHO:
@@ -714,7 +718,7 @@ Figure: Expanded live adult Coho (bars) and carcasses (black line). Bar fill ind
 
 ## Snorkel, angling & swim-in counts
 
-```{r}
+```{r eval=F}
 ggplot() +
   geom_bar(data=nit.sil %>% 
              filter(species=="Coho") %>% 
@@ -901,15 +905,15 @@ Figure: Raw swim counts (blue) from this year compared to historical raw swim co
 
 ```{r}
 ggplot()  +
-  geom_bar(data=nit.esc %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CO"), 
+  geom_bar(data=nit.escHistorical %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CO"), 
            aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
-  geom_bar(data=nit.esc %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CO"), 
+  geom_bar(data=nit.escHistorical %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CO"), 
            aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
   geom_bar(data=escEstSpp %>% 
              filter(ShortSpecies=="CO", AREA!="20", grepl("Nitinat", SystemName)) %>% 
              select(Year, SystemName, AdultNaturalReco) %>% 
              summarize(n=sum(AdultNaturalReco)), 
-             aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +    scale_x_continuous(breaks=seq(min(nit.esc$`Analysis Year`), analysis_year, by=2)) +
+             aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +    scale_x_continuous(breaks=seq(min(nit.escHistorical$`Analysis Year`), analysis_year, by=2)) +
   labs(x="Return Year", y="Coho spawners") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
@@ -1051,7 +1055,8 @@ Figure: Expanded live adult Chum (bars) and carcasses (black line). Bar fill ind
                pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
              aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
              stat="identity", position="stack", alpha=0.7, size=1) +
-    geom_bar(data=nrh.cm,
+    geom_bar(data=nrh.cm %>% 
+               group_by,
              aes(x=as.Date(`Start Date`), y=`Total Count`*5), fill="black", stat="identity", alpha=0.7) +
     scale_y_continuous(sec.axis = sec_axis(~./5, name="Swim ins")) +
     scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
@@ -1244,15 +1249,15 @@ Figure: Raw swim counts (blue) from this year compared to historical raw swim co
 
 ```{r}
 ggplot()  +
-  geom_bar(data=nit.esc %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CM"), 
+  geom_bar(data=nit.escHistorical %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CM"), 
            aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
-  geom_bar(data=nit.esc %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CM"), 
+  geom_bar(data=nit.escHistorical %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CM"), 
            aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
   geom_bar(data=escEstSpp %>% 
              filter(ShortSpecies=="CM", AREA!="20", grepl("Nitinat", SystemName)) %>% 
              select(Year, SystemName, AdultNaturalReco) %>% 
              summarize(n=sum(AdultNaturalReco)), 
-             aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   scale_x_continuous(breaks=seq(min(nit.esc$`Analysis Year`), analysis_year, by=2)) +
+             aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   scale_x_continuous(breaks=seq(min(nit.escHistorical$`Analysis Year`), analysis_year, by=2)) +
   labs(x="Return Year", y="Chum spawners") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
@@ -1400,9 +1405,9 @@ Figure: Expanded live adult Chinook (bars) and carcasses (black line). Bar fill 
              stat="identity", position="stack", alpha=0.7, width=2, size=1) +
     geom_bar(data=nrh.cn %>% 
                filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot)) %>% 
-               group_by(`Activity Start Date`) %>% 
+               group_by(`Activity Start Date`, MaturityClassGroup) %>% 
                summarize(n=sum(TotalCount)),
-             aes(x=as.Date(`Activity Start Date`), y=n*1), fill="black", stat="identity", alpha=0.5) +
+             aes(x=as.Date(`Activity Start Date`), y=n*1, fill=MaturityClassGroup), stat="identity", alpha=0.5) +
     scale_y_continuous(sec.axis = sec_axis(~./1, name="Swim ins")) +
     scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
     scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
