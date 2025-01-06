@@ -771,7 +771,33 @@ ggplot(data=nrh.co %>%
            stat="identity", size=1, alpha=0.7) +
   theme_bw()
 ```
+Figure: Mark rate of all coho caught in purse seine catches in Nitinat Lake. Excluded gillnet catch as mark rate is typically not examined. 
 
+<br>
+
+```{r}
+co_markrateALL <- nrh.co %>%
+  filter(ParentActivityType=="Adult Capture", grepl("Lake", InventoryLot, ignore.case=T), 
+         grepl("Seine", `Capture Method`)) %>% 
+  group_by(`External Mark`) %>% 
+  summarize(n=sum(TotalCount)) %>% 
+  mutate(mark_rate = n/sum(n)) %>%
+  rename(ExternalMark=`External Mark`)
+
+co_markrateADULT <- nrh.co %>%
+  filter(ParentActivityType=="Adult Capture", grepl("Lake", InventoryLot, ignore.case=T), 
+         grepl("Seine", `Capture Method`)) %>% 
+  filter(MaturityClass%in%c("Male", "Female")) %>%
+  group_by(`External Mark`) %>% 
+  summarize(n=sum(TotalCount)) %>% 
+  mutate(mark_rate = n/sum(n)) %>%
+  rename(ExternalMark=`External Mark`)
+```
+
+
+The overall mark rate of ALL coho caught in Nitinat Lake purse seine this year was `r round(co_markrateALL[co_markrateALL$ExternalMark=="Clipped",]$mark_rate*100, 1)`%. 
+
+The overall mark rate of ADULT coho caught in Nitinat Lake purse seine this year was `r round(co_markrateADULT[co_markrateADULT$ExternalMark=="Clipped",]$mark_rate*100, 1)`%.
 
 <br>
 
