@@ -753,7 +753,7 @@ ggplot() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
 
-Figure: Expanded adult Coho counts (large bars) and swim-ins (narrow black bars). Adult bar fill colours indicate behaviour (spawning=gray, holding=white), bar line colour indicates river segment (lower=pink, upper=blue). 
+Figure: Expanded adult Coho counts (large bars) and ALL swim-ins (narrow black bars, including jacks). Adult bar fill colours indicate behaviour (spawning=gray, holding=white), bar line colour indicates river segment (lower=pink, upper=blue). 
 
 <br>
 
