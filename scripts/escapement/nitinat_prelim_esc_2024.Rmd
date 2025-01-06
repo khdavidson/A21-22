@@ -757,6 +757,24 @@ Figure: Expanded adult Coho counts (large bars) and ALL swim-ins (narrow black b
 
 <br>
 
+## Mark rate in lake
+
+```{r}
+ggplot(data=nrh.co %>%
+         filter(ParentActivityType=="Adult Capture", grepl("Lake", InventoryLot, ignore.case=T), 
+                grepl("Seine", `Capture Method`)) %>% 
+         group_by(`Activity Start Date`, `External Mark`) %>% 
+         summarize(n=sum(TotalCount)) %>% 
+         group_by(`Activity Start Date`) %>% 
+         mutate(mark_rate = n/sum(n))) +
+  geom_bar(aes(x=`Activity Start Date`, y=mark_rate, fill=`External Mark`, colour=`External Mark`), 
+           stat="identity", size=1, alpha=0.7) +
+  theme_bw()
+```
+
+
+<br>
+
 <br>
 
 ## Tributaries (River and Lake)
@@ -884,6 +902,8 @@ escEstSpp %>%
 <br>
 
 ### Estimate decision:
+
+
 
 For 2023 estimate we went with PL+D as even the highest AUC estimate didn't cover the peak raw live count and timing/coverage wasn't great for AUC (no spawning observed). Expanded PL+D = 1364 adults + 154 jacks (1518 total). ADDED swim-ins and angled catch due to survey timing relative to swim ins this year (see graph above - swim ins were already in the hatchery by the time the PL+D count happened): 1092 adult swim-ins and 58 jacks, 16 angled adults and 3 angled jacks. Need to REMOVE trib fish (3 NoName, 4 Worthless=7 adults) because they were surveyed after the PL+D, and most fish on the PL+D count were not spawning - and on the Nov 12 mainstem swim there were few fish left in the lower mainstem so all had moved up higher/to tribs. With swim-ins and angling added and tribs removed, final escapement estimate is  1364+1092+16-7 = 2465 adults + 215 jacks (2680 total). See beginning section for commentary about expansions for omission of Reach 5-4 on Oct 5 survey due to bear activity.   *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
 
