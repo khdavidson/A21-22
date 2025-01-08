@@ -369,8 +369,6 @@ geom_bar(data=nit.sil %>%
 
 Figure: Sockeye counts (raw live adults), water levels (blue line)
 
-Only about 2-3% of the total SK counts were above the log jam.
-
 <br>
 
 <br>
@@ -547,8 +545,7 @@ escEstSpp %>%
 <br>
 
 ### Estimate decision:
-
-**FILL IN HERE**
+For 2024 went with expanded AUC estimate (SL=35 days) as we had an early spot-check swim in pools that was a good indicator of SK timing/abundance early-on. The AUC curve is also reasonable. There were no SK noted in tribs and there is no enhancement of SK, so this gives a natural spawner/total escapement estimate of `r escEstSpp %>% filter(ShortSpecies=="SK", SystemName=="Nitinat River, Nitinat Lake") %>% pull(AdultExpAUCMidValue_R)` adults and `r escEstSpp %>% filter(ShortSpecies=="SK", SystemName=="Nitinat River, Nitinat Lake") %>% pull(JackExpAUCMidValue_R)` jack.  
 
 <br>
 
@@ -725,15 +722,15 @@ ggplot() +
            stat="identity", position="stack", alpha=0.7, size=1) +
   geom_bar(data=nrh.co %>% 
              filter(ParentActivityType=="Adult Capture", grepl("Swim In", InventoryLot, ignore.case=T)) %>% 
-             group_by(`Activity Start Date`) %>% 
+             group_by(ActivityStartDate) %>% 
              summarize(n=sum(TotalCount)),
-           aes(x=as.Date(`Activity Start Date`), y=n), fill="black", stat="identity", alpha=0.7, width=5) +
+           aes(x=as.Date(ActivityStartDate), y=n), fill="black", stat="identity", alpha=0.7, width=5) +
   
   geom_bar(data=nrh.co %>%
-             filter(`Operations Location`!="Nitinat Lake", !is.na(`Operations Location`), `Activity Type`=="Deposit to Holding")%>%
-             group_by(`Activity Start Date`) %>% 
+             filter(OperationsLocation!="Nitinat Lake", !is.na(OperationsLocation), ActivityType=="Deposit to Holding")%>%
+             group_by(ActivityStartDate) %>% 
              summarize(n=sum(TotalCount)),
-           aes(x=as.Date(`Activity Start Date`), y=n*10), stat="identity", fill="green", alpha=0.7) +
+           aes(x=as.Date(ActivityStartDate), y=n*10), stat="identity", fill="green", alpha=0.7) +
   scale_y_continuous(sec.axis = sec_axis(~./10, name="Swim-Ins/Angling")) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
@@ -751,12 +748,12 @@ Figure: Expanded adult Coho counts (large bars) and ALL swim-ins (narrow black b
 ```{r}
 ggplot(data=nrh.co %>%
          filter(ParentActivityType=="Adult Capture", grepl("Lake", InventoryLot, ignore.case=T), 
-                grepl("Seine", `Capture Method`)) %>% 
-         group_by(`Activity Start Date`, `External Mark`) %>% 
+                grepl("Seine", CaptureMethod)) %>% 
+         group_by(ActivityStartDate, ExternalMark) %>% 
          summarize(n=sum(TotalCount)) %>% 
-         group_by(`Activity Start Date`) %>% 
+         group_by(ActivityStartDate) %>% 
          mutate(mark_rate = n/sum(n))) +
-  geom_bar(aes(x=`Activity Start Date`, y=mark_rate, fill=`External Mark`, colour=`External Mark`), 
+  geom_bar(aes(x=ActivityStartDate, y=mark_rate, fill=ExternalMark, colour=ExternalMark), 
            stat="identity", size=1, alpha=0.7) +
   theme_bw()
 ```
@@ -768,20 +765,18 @@ Figure: Mark rate of all coho caught in purse seine catches in Nitinat Lake. Exc
 ```{r}
 co_markrateALL <- nrh.co %>%
   filter(ParentActivityType=="Adult Capture", grepl("Lake", InventoryLot, ignore.case=T), 
-         grepl("Seine", `Capture Method`)) %>% 
-  group_by(`External Mark`) %>% 
+         grepl("Seine", CaptureMethod)) %>% 
+  group_by(ExternalMark) %>% 
   summarize(n=sum(TotalCount)) %>% 
-  mutate(mark_rate = n/sum(n)) %>%
-  rename(ExternalMark=`External Mark`)
+  mutate(mark_rate = n/sum(n)) 
 
 co_markrateADULT <- nrh.co %>%
   filter(ParentActivityType=="Adult Capture", grepl("Lake", InventoryLot, ignore.case=T), 
-         grepl("Seine", `Capture Method`)) %>% 
+         grepl("Seine", CaptureMethod)) %>% 
   filter(MaturityClass%in%c("Male", "Female")) %>%
-  group_by(`External Mark`) %>% 
+  group_by(ExternalMark) %>% 
   summarize(n=sum(TotalCount)) %>% 
-  mutate(mark_rate = n/sum(n)) %>%
-  rename(ExternalMark=`External Mark`)
+  mutate(mark_rate = n/sum(n)) 
 ```
 
 
@@ -1104,10 +1099,10 @@ ggplot() +
            aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
            stat="identity", position="stack", alpha=0.7, size=1, width=1) +
   geom_bar(data=nrh.cm %>% 
-             filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClassGroup=="Adult") %>% 
-             group_by(`Activity Start Date`) %>% 
+             filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot)) %>% 
+             group_by(ActivityStartDate) %>% 
              summarize(n=sum(TotalCount)),
-           aes(x=as.Date(`Activity Start Date`), y=n*10), fill="black", stat="identity", alpha=0.5, width=1) +
+           aes(x=as.Date(ActivityStartDate), y=n*10), fill="black", stat="identity", alpha=0.5, width=1) +
   scale_y_continuous(sec.axis = sec_axis(~./10, name="Swim ins")) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d", limits=c(as.Date("2024-09-15"), as.Date("2024-11-15"))) +
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
@@ -1116,7 +1111,7 @@ ggplot() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
 
-Figure: Expanded adult Chum counts (large bars) and swim-ins (narrow black bars). Adult bar fill colours indicate behaviour (spawning=gray, holding=white), bar line colour indicates river segment (lower=pink, upper=blue).
+Figure: Expanded Chum counts (large bars) and swim-ins (narrow black bars). Adult bar fill colours indicate behaviour (spawning=gray, holding=white), bar line colour indicates river segment (lower=pink, upper=blue).
 
 <br>
 
@@ -1456,10 +1451,10 @@ ggplot() +
            aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
            stat="identity", position="stack", alpha=0.7, width=2, size=1) +
   geom_bar(data=nrh.cn %>% 
-             filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClassGroup=="Adult") %>% 
-             group_by(`Activity Start Date`) %>% 
+             filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass%in%c("Male","Female")) %>% 
+             group_by(ActivityStartDate) %>% 
              summarize(n=sum(TotalCount)),
-           aes(x=as.Date(`Activity Start Date`), y=n*1), fill="black", stat="identity", alpha=0.5) +
+           aes(x=as.Date(ActivityStartDate), y=n*1), fill="black", stat="identity", alpha=0.5) +
   scale_y_continuous(sec.axis = sec_axis(~./1, name="Swim ins")) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
@@ -1630,7 +1625,6 @@ escEstSpp %>%
 <br>
 
 ### Estimate decision:   
-
 For 2024, suggest that swim-ins be subtracted from the mid-point AUC estimate to get to ~10k spawners ultimately. NRH observations fall closer to ~10-11k, and we only saw about 9k adults on swims. The Hatchery also struggled to get broodstock this year and did not meet their brood targets, whereas last year they had no issue and the escapement estimated landed around ~15k. Therefore escapement this year should be considerably lower. 
 Looking at the swim-in timing and spawning, spawning started up after most of the fish swam into the hatchery, which suggests some of the mainstem fish counted on Sept 19 (lower) and even Oct 1 (minimal spawning in the lower). Most swim-ins were into the hatchery by the Oct 11 survey which had a lot of spawning. I would recommend subtracting the swim-ins - even the late bump ~Oct 19 because i think the AUC curve covers this component within the area integrated under the curve.
 Given this, if we took the mid point estimate of `r escEstSpp %>% filter(ShortSpecies=="CN", SystemName=="Nitinat River, Nitinat Lake") %>% group_by(AdultExpAUCMidValue_R) %>% summarize() %>% pull()` minus `r nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass!="Jack") %>% summarize(sum(TotalCount)) %>% pull()` adult swim-ins leaves `r (escEstSpp %>% filter(ShortSpecies=="CN", SystemName=="Nitinat River, Nitinat Lake") %>% group_by(AdultExpAUCMidValue_R) %>% summarize() %>% pull()) - (nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass!="Jack") %>% summarize(sum(TotalCount)) %>% pull())` natural adult spawners. 
