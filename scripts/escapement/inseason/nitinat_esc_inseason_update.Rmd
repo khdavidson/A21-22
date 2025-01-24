@@ -25,7 +25,7 @@ options(scipen=9999)
 
 # ================== COUNT DATA ================== 
 # SIL data ---------------------------------
- nitinat.SIL <- readxl::read_excel(path=paste0("//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/", 
+ nitinat.SIL <- readxl::read_excel(path=paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/", 
                                                escapement_year, 
                                                "/SILs/Area 21-22/Nitinat River/A22_Nitinat_River_", 
                                                escapement_year, 
@@ -101,7 +101,7 @@ SJ.water <- full_join(
 nit.rtStWk <- readxl::read_excel(path=#paste0(here::here("data", "escapement"), sep="/", 
                                       #       list.files(path=here::here("data", "escapement"),
                                       #                  pattern="run timing tables (updated)*")), 
-                                   "//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/ESCAPEMENT/Data/run timing tables (updated).xlsx",
+                                   "//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/run timing tables (updated).xlsx",
                                  sheet="Nitinat", guess_max=10000, trim_ws=T, 
                                  range=cellranger::cell_limits(c(4, 1), c(NA, NA))) %>% 
   select(-c(`...24`:`...75`)) %>%
