@@ -340,6 +340,10 @@ Figure: Live Adult sockeye raw counts (blue) and counts expanded for % populatio
 
 
 ```{r}
+pdf(file = here::here("outputs", "figures", paste0(analysis_year, " SK count-enviro.pdf")),   
+    width = 11, # The width of the plot in inches
+    height = 8.5) # The height of the plot in inches
+
 ggplot() +
   # Plot water data -------------
 geom_ribbon(data=nit.water %>% 
@@ -360,11 +364,17 @@ geom_bar(data=nit.sil %>%
          aes(x=as.Date(date), y=n, group=type, fill=`upper/lower (for Nitinat River only)`, 
              colour=`upper/lower (for Nitinat River only)`), 
          stat="identity", position="stack", alpha=0.7) +
-  scale_y_continuous(sec.axis = sec_axis(~./100, name="Staff gauge (m)")) +
+  scale_y_continuous(sec.axis = sec_axis(~./50, name="Water level (m)")) +
   scale_x_date(date_breaks="7 day", date_labels="%b %d") +
-  labs(x="", y="Expanded adult Sockeye", fill="Segment", colour="Segment") +
+  labs(x="", y="Sockeye live count (adults)", fill="Segment", colour="Segment") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle=45, hjust=1))
+  theme(axis.text.x = element_text(angle=45, hjust=1, size=20),
+        axis.text = element_text(size=20),
+        axis.title = element_text(face="bold", size=22),
+        legend.text = element_text(size=17),
+        legend.title = element_text(size=18))
+
+dev.off()
 ```
 
 Figure: Sockeye counts (raw live adults), water levels (blue line)
@@ -645,6 +655,10 @@ Figure: Live Adult Coho raw counts (blue) and counts expanded for % population a
 ## Counts & environmentals
 
 ```{r}
+pdf(file = here::here("outputs", "figures", paste0(analysis_year, " CO count-enviro.pdf")),   
+    width = 11, # The width of the plot in inches
+    height = 8.5) # The height of the plot in inches
+
 ggplot() +
   # Plot water data -------------
 geom_ribbon(data=nit.water %>% 
@@ -664,9 +678,15 @@ geom_ribbon(data=nit.water %>%
            stat="identity", position="stack", alpha=0.7) +
   scale_y_continuous(sec.axis = sec_axis(~./300, name="Water level (m)")) +
   scale_x_date(date_breaks="7 day", date_labels="%b %d") +
-  labs(x="", y="Live adult Coho", fill="Segment", colour="Segment") +
+  labs(x="", y="Coho live count (adults)", fill="Segment", colour="Segment") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle=45, hjust=1))
+  theme(axis.text.x = element_text(angle=45, hjust=1, size=20),
+        axis.text = element_text(size=20),
+        axis.title = element_text(face="bold", size=22),
+        legend.text = element_text(size=17),
+        legend.title = element_text(size=18))
+
+dev.off()
 ```
 
 Figure: Coho counts (raw live adults) and water levels (blue line) 
@@ -1021,32 +1041,42 @@ Figure: Live Adult Chum raw counts (blue) and counts expanded for % population a
 ## Counts & environmentals
 
 ```{r}
+pdf(file = here::here("outputs", "figures", paste0(analysis_year, " CM count-enviro.pdf")),   
+    width = 11, # The width of the plot in inches
+    height = 8.5) # The height of the plot in inches
+
 ggplot() +
   # Plot water data -------------
 geom_ribbon(data=nit.water %>% 
               filter(year==analysis_year, month%in%c("Aug", "Sep", "Oct", "Nov")) %>%
               group_by(date2) %>% 
               summarize(min=min(Water.Level.m), max=max(Water.Level.m)), 
-            aes(x=as.Date(date2), ymin=min*5000, ymax=max*5000), fill="dodger blue", alpha=0.5) +
+            aes(x=as.Date(date2), ymin=min*20000, ymax=max*20000), fill="dodger blue", alpha=0.5) +
   geom_line(data=nit.water %>% 
               filter(year==analysis_year, month%in%c("Aug", "Sep", "Oct", "Nov")) %>%
               group_by(date2) %>% 
               summarize(mean = mean(Water.Level.m)), 
-            aes(x=as.Date(date2), y=mean*5000), colour="dodger blue") +
+            aes(x=as.Date(date2), y=mean*20000), colour="dodger blue") +
   geom_bar(data=nit.sil %>% filter(species=="Chum") %>% group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
              summarize(n=sum(`adults live`)), 
            aes(x=as.Date(date), y=n, group=type, 
                fill=`upper/lower (for Nitinat River only)`, 
                colour=`upper/lower (for Nitinat River only)`), 
-           stat="identity", position="stack", alpha=0.7) +
-  scale_y_continuous(sec.axis = sec_axis(~./5000, name="Staff gauge (m)")) +
-  scale_x_date(date_breaks="7 day", date_labels="%b %d") +
-  labs(x="", y="Expanded adult Chum", fill="Segment", colour="Segment") +
+           stat="identity", position="stack", alpha=0.7, size=0.5, width=2) +
+  scale_y_continuous(sec.axis = sec_axis(~./20000, name="Water level (m)")) +
+  scale_x_date(date_breaks="7 day", date_labels="%b %d", limits=c(as.Date("2024-09-05"), as.Date("2024-11-15"))) +
+  labs(x="", y="Chum live count (adults)", fill="Segment", colour="Segment") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle=45, hjust=1))
+  theme(axis.text.x = element_text(angle=45, hjust=1, size=20),
+        axis.text = element_text(size=20),
+        axis.title = element_text(face="bold", size=22),
+        legend.text = element_text(size=17),
+        legend.title = element_text(size=18))
+
+dev.off()
 ```
 
-Figure: Chinook counts (raw live adults), water levels (blue line)
+Figure: Chum counts (raw live adults), water levels (blue line)
 
 <br>
 
@@ -1284,7 +1314,7 @@ ggplot() +
   scale_fill_manual(breaks=waiver(), values=c("gray60", "dodger blue")) +
   scale_colour_manual(breaks=waiver(), values=c("gray60", "dodger blue")) +
   scale_size_manual(breaks=waiver(), values=c(1.5,3.5)) +
-  labs(x="Stat week", y="Live adult Coho", fill="Year:", colour="Year:", size="Year:") +
+  labs(x="Stat week", y="Live adult Chum", fill="Year:", colour="Year:", size="Year:") +
   theme_bw() +
   theme(legend.position = "bottom",
         legend.box = "horizontal")
@@ -1375,6 +1405,10 @@ Figure: Live Adult Chinook raw counts (blue) and counts expanded for % populatio
 ## Counts & environmentals
 
 ```{r }
+pdf(file = here::here("outputs", "figures", paste0(analysis_year, " CN count-enviro.pdf")),   
+    width = 11, # The width of the plot in inches
+    height = 8.5) # The height of the plot in inches
+
 ggplot() +
   # Plot water data -------------
 geom_ribbon(data=nit.water %>% 
@@ -1393,11 +1427,17 @@ geom_ribbon(data=nit.water %>%
                fill=`upper/lower (for Nitinat River only)`, colour=`upper/lower (for Nitinat River only)`), 
            stat="identity", position="stack", alpha=0.7) +
   labs(x="", y="Expanded adult Chinook") +
-  scale_y_continuous(sec.axis = sec_axis(~./2000, name="Staff gauge (m)")) +
+  scale_y_continuous(sec.axis = sec_axis(~./2000, name="Water level (m)")) +
   scale_x_date(date_breaks="7 day", date_labels="%b %d") +
   labs(x="", Y="Live chinook", fill="Segment", colour="Segment") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle=45, hjust=1))
+  theme(axis.text.x = element_text(angle=45, hjust=1, size=20),
+        axis.text = element_text(size=20),
+        axis.title = element_text(face="bold", size=22),
+        legend.text = element_text(size=17),
+        legend.title = element_text(size=18))
+
+dev.off()
 ```
 
 Figure: Chinook counts (raw live adults), water levels (blue line)
