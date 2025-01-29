@@ -73,7 +73,7 @@ WCVIcrestBDWR.catEst.Nit <- left_join(WCVIcrestBDWR %>%
                                         mutate_at("AREA", as.character) %>% 
                                         filter(SAMPLE_TYPE=="Sport", SPECIES==124, DISPOSITION=="Kept", LEGAL_STATUS=="LEGAL") %>% 
                                         group_by(YEAR, MONTH, AREA, isNit1, isNit2) %>% 
-                                        summarize(n1 = n()), 
+                                        summarize(n_lvl1 = n()), 
                                       
                                       catEst %>% 
                                         mutate(PFMA = str_sub(PFMA, start=6, end=9)) %>%
@@ -139,60 +139,57 @@ Proportion of legal sized biosamples that return as Nitinat in each Area applied
 
 <br>
 
-#### All Nitinat-origin across WCVI
+#### All Nitinat-origin across WCVI (Hatchery Nit + Natural Nit)
 
-Applying stock comp %s from creel biosamples to estimated catch by Month/Area/Year. Note 2023 is incomplete as of January 2025. 
+Applying stock comp %s from creel biosamples to estimated catch by Month/Area/Year. Note 2023 and 2024 are incomplete as of January 2025. 
 
 ```{r}
-# Helpers for graphing ------------------
-# WCVIcrestBDWR.catEst.sj$AREA <- factor(WCVIcrestBDWR.catEst.sj$AREA, levels=c("127", "27", "126", "26", "125", "25", "124", "24", "123", "23", "121", "22", "21", "20", ordered=T))
-# WCVIcrestBDWR.catEst.sj$MONTH <- factor(WCVIcrestBDWR.catEst.sj$MONTH, levels=month.name)
-#
 
-pdf(file = here::here("outputs", "figures", "WCVI Nitinat catch estimate map 2017-2023.pdf"),   
-    width = 11, # The width of the plot in inches
-    height = 8.5) # The height of the plot in inches
+# pdf(file = here::here("outputs", "figures", "WCVI Nitinat catch estimate map 2017-2023.pdf"),   
+#     width = 11, # The width of the plot in inches
+#     height = 8.5) # The height of the plot in inches
 
 # Heatmap of all WCVI Nitinat catch estimates all years ------------------
-#plotly::ggplotly(
+plotly::ggplotly(
 ggplot(data = WCVIcrestBDWR.catEst.Nit %>% 
-         group_by(YEAR, MONTH, AREA, isNit1) %>% 
-         summarize(n_lvl1 = sum(n, na.rm=T),
+         group_by(YEAR, MONTH, AREA, isNit2) %>% 
+         summarize(n_lvl2 = sum(n_lvl1, na.rm=T),
                    Est_Kept = unique(Est_Kept),
                    `Est_Released Legal` = unique(`Est_Released Legal`))  %>%
          group_by(YEAR, MONTH, AREA) %>% 
-         mutate(AreaMonthTotalSamples = sum(n_lvl1, na.rm=T),
-                propn_AreaMonth = n_lvl1/AreaMonthTotalSamples,
+         mutate(AreaMonthTotalSamples = sum(n_lvl2, na.rm=T),
+                propn_AreaMonth = n_lvl2/AreaMonthTotalSamples,
                 estKeptByID = propn_AreaMonth*Est_Kept,
-                inverse_estKeptByID = case_when(grepl("Other", isNit1) ~ Est_Kept-estKeptByID,
-                                                TRUE ~ estKeptByID),
-                inverse_estKeptByID = case_when(inverse_estKeptByID==0 ~ NA,
-                                                TRUE ~ inverse_estKeptByID)) %>%
+                NitOnly_forPlot = case_when(grepl("Other", isNit2) ~ Est_Kept-estKeptByID,
+                                            TRUE ~ estKeptByID),
+                NitOnly_forPlot = case_when(NitOnly_forPlot==0 ~ NA,
+                                            TRUE ~ NitOnly_forPlot)) %>%
          filter(!is.na(YEAR),
-                !(grepl("Other", isNit1) & propn_AreaMonth<1 & estKeptByID!=inverse_estKeptByID)) %>%
+                !(grepl("Other", isNit2) & propn_AreaMonth<1 & estKeptByID!=NitOnly_forPlot)) %>%
          ungroup() %>%
-         full_join(data.frame(AREA=c("127", "27", "126", "26", "125", "25", "124", "24", "123", "23", "121", "22", "21",
-                                     "20")) %>%
+         full_join(data.frame(AREA=c("127", "27", "126", "26", "125", "25", "124", "24", "123", "23", "121", "22", "21", "20")) %>%
                      mutate(YEAR=rep(2023, nrow(.)),
                             MONTH=rep("May", nrow(.))),
                    .,
                    by=c("YEAR", "MONTH", "AREA")) %>%
          complete(., YEAR, MONTH, AREA)) +
-  # geom_ribbon(data = WCVIcrestBDWR.catEst.Nit %>% 
-  #               filter(YEAR %in% c(2017:2019)),
-  #             aes(ymin=127, ymax=20, x=factor(MONTH, levels=month.name)),
-  #             fill="gray80", colour="gray80", alpha=0.2, size=40) +
+  geom_rect(data=WCVIcrestBDWR.catEst.Nit %>% 
+              filter(YEAR %in% c(2023, 2024)) %>%
+              group_by(YEAR) %>%
+              summarize(unique(YEAR)), 
+            aes(), fill="red", xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, alpha=0.1) +
+  geom_point(aes(y=AREA, x=factor(MONTH, levels=month.name), fill=NitOnly_forPlot, colour=NitOnly_forPlot, 
+                 text=paste("Estimated # kept Nitinat CN=", round(estKeptByID,0), "\nBased on # confirmed biosamples, n=", n_lvl2)), 
+             shape=22, size=6, alpha=0.8) +
+  scale_fill_gradient(low="#2900aa", high="orange", na.value=alpha("gray80", 0.3))+
+  scale_colour_gradient(low="#2900aa", high="orange", na.value=alpha("gray80", 0.3))+
+  # --- colour options below are nice but don't work with ggplotly: 
+  #scale_fill_binned(breaks=seq(0, 500, by=100), type="viridis", na.value="transparent") +
+  #scale_colour_binned(breaks=seq(0, 500, by=100), type="viridis", na.value="gray80") +
   scale_x_discrete(limits = c("May", "June", "July", "August", "September")) +
   scale_y_discrete(limits = rev(c("127", "27", "126", "26", "125", "25", "124", "24", "123", "23", "121", "22", "21", "20"))) +
-
-  geom_point(aes(y=AREA, x=factor(MONTH, levels=month.name), fill=inverse_estKeptByID, colour=inverse_estKeptByID, 
-                 #text=paste("Estimated # kept=", round(estKeptByID,0), "\nBased on # confirmed biosamples, n=", n_lvl1)
-  ), 
-  shape=22, size=6, alpha=0.8) +
-  scale_fill_binned(breaks=seq(0, 500, by=100), type="viridis", na.value="transparent") +
-  scale_colour_binned(breaks=seq(0, 500, by=100), type="viridis", na.value="gray80") +
-  labs(x="", y="Area", fill="Estimated # Legal, Kept \nNitinat-origin Chinook", 
-       colour="Estimated # Legal, Kept \nNitinat-origin Chinook") +
+  labs(x="", y="Area", fill="Estimated # kept legal \nNitinat-origin Chinook", 
+       colour="Estimated # kept legal \nNitinat-origin Chinook") +
   theme_bw() +
   facet_wrap(~YEAR, ncol=2, strip.position = "right") + 
   theme(axis.title = element_text(face="bold", size=22),
@@ -201,15 +198,12 @@ ggplot(data = WCVIcrestBDWR.catEst.Nit %>%
         legend.text = element_text(size=17),
         legend.key.size = unit(15, "mm"),
         legend.position = "bottom",
-        legend.direction = "horizontal",
-        strip.text = element_text(size=20))+
-    geom_ribbon(data = WCVIcrestBDWR.catEst.Nit %>% 
-                filter(YEAR == 2023) %>% 
-                group_by(AREA, MONTH) %>% 
-                summarize(),
-              aes(ymin=min(AREA), ymax=max(AREA), x=factor(MONTH, levels=month.name)),
-              fill="red", colour="red", alpha=1, size=40, stat="identity") 
-#)
+        #legend.direction = "horizontal",
+        strip.text = element_text(size=20)),
+tooltip=c("AREA", "MONTH", "text")
+)
+
+#dev.off()
 ```
 
 
