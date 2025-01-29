@@ -18,12 +18,12 @@ knitr::opts_chunk$set(echo=F,  message=F, warning=F)
 
 # Load libraries ------------------
 library(tidyverse)
-library(here)
-library(readxl)
-library(scales)
-library(plotly)
-library(bookdown)
-library(kableExtra)
+# library(here)
+# library(readxl)
+# library(scales)
+# library(plotly)
+# library(bookdown)
+# library(kableExtra)
 
 
 # Load helpers ------------------
@@ -39,27 +39,57 @@ library(kableExtra)
 # ============================ Load data ============================
 
 # Biodata w results ----------------------
-crestBDWR <- readxl::read_excel(path=list.files(
-  path="//dcbcpbsna01a.ENT.dfo-mpo.ca/SCD_Stad/WCVI/CHINOOK/WCVI_TERMINAL_RUN/Annual_data_summaries_for_RunRecons/CRESTcompile_base-files/2-Export-from-R/",
-                                           pattern="R_OUT - Biological_Data_With_Results*.*xlsx", full.names = T),
-                                   sheet="CREST Biodata Compiled") %>%
-  mutate(#`(R) Origin` = case_when(HATCHERY_ORIGIN=="Y" | PBT_BROOD_YEAR > 2000 ~ "Hatchery",
-        #                          THERMALMARK=="Not Marked" | is.na(PBT_BROOD_YEAR) | PBT_BROOD_YEAR==0  ~ "Natural (assumed)",
-        #                          TRUE ~ "Unknown"),
-        # RESOLVED_ID_ORIGIN = paste0(`(R) Origin`, sep=" ", RESOLVED_STOCK_ORIGIN),
-         #RESOVLED_REGION_ORIGIN = case_when(RESOLVED_STOCK_SOURCE=="DNA" & PROB_1 <0.75 ~ paste0(`(R) Origin`, sep=" ", "Unknown (<75% GSI assignment)"),
-          #                                  TRUE ~ paste0(`(R) Origin`, sep=" ", RESOLVED_STOCK_ROLLUP)),
-         yday = lubridate::yday(COLLECTION_DATE),
+WCVIcrestBDWR <- readxl::read_excel(path=list.files(path=#"//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/CHINOOK/WCVI_TERMINAL_RUN/Annual_data_summaries_for_RunRecons/CREST-BDWRcompile_base-files/2-Export-from-R/",
+                                            here::here("data", "fisheries"),
+                                          pattern="^R_OUT - Biological_Data_With_Results \\(.*\\) \\d{4}-\\d{4}\\.xlsx$", 
+                                          full.names=T), 
+                          sheet="CREST Biodata Compiled", guess_max = 10000) %>%
+  mutate(yday = lubridate::yday(COLLECTION_DATE),
          LEGAL_STATUS = case_when(LENGTH_MM > 450 & LENGTH_MM < 800 ~ "LEGAL",
                                   LENGTH_MM <= 450 ~ "SUBLEGAL",
-                                  LENGTH_MM >= 800 & yday%in%c(196:212) ~ "EXTRALEGAL",
-                                  LENGTH_MM >= 800 & yday%notin%c(196:212) ~ "LEGAL")) %>% 
+                                  LENGTH_MM >= 800 & yday%in%c(196:212) ~ "SUPERLEGAL",
+                                  LENGTH_MM >= 800 & yday%notin%c(196:212) ~ "LEGAL"),
+         isNit1 = case_when(grepl("Nitinat", RESOLVED_STOCK_ORIGIN) ~ paste0(`(R) Origin`, " ", RESOLVED_STOCK_ORIGIN),
+                           !grepl("Nitinat", RESOLVED_STOCK_ORIGIN) & `(R) Origin`!="Unknown" ~ 
+                             paste0(`(R) Origin`, " Other"),
+                           !grepl("Nitinat", RESOLVED_STOCK_ORIGIN) & `(R) Origin`=="Unknown" ~ 
+                             "Unknown Other"),
+         isNit2 = case_when(grepl("Nitinat", isNit1) ~ "Nitinat",
+                            TRUE ~ "Other")) %>% 
+  filter(!(RESOLVED_STOCK_SOURCE=="DNA" & PROB_1<0.75)) %>%
   print()
 
 
 # Catch estimates ----------------------
-catEst <- readxl::read_excel(path="//dcbcpbsna01a.ENT.dfo-mpo.ca/Salmon$/FMCR_Fishery_Monitoring_Catch_Reporting/Recreational_CM/Catch_Data/SC Sport Catch Creel Sub-area Disposition (Master Do No Edit).xlsx", sheet="YTD") %>%
-  filter(PFMA%in%c("PFMA 21", "PFMA 121"), YEAR%in%c(2017:2023), SPECIES=="CHINOOK SALMON")
+catEst <- readxl::read_excel(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/Reg_Shares/FHM/SMCS/Salmon/FMCR_Fishery_Monitoring_Catch_Reporting/Recreational_CM/Catch_Data/SC Sport Catch Creel Sub-area Disposition (Master Do No Edit).xlsx", 
+                             sheet="YTD") %>%
+  filter(grepl("127|27|126|26|125|25|124|24|123|23|121|21|22|20", PFMA), YEAR>=2017, SPECIES=="CHINOOK SALMON") 
+
+
+
+
+# CREST biodata joined to catch ------------------------
+WCVIcrestBDWR.catEst.Nit <- left_join(WCVIcrestBDWR %>% 
+                                        mutate_at("AREA", as.character) %>% 
+                                        filter(SAMPLE_TYPE=="Sport", SPECIES==124, DISPOSITION=="Kept", LEGAL_STATUS=="LEGAL") %>% 
+                                        group_by(YEAR, MONTH, AREA, isNit1, isNit2) %>% 
+                                        summarize(n1 = n()), 
+                                      
+                                      catEst %>% 
+                                        mutate(PFMA = str_sub(PFMA, start=6, end=9)) %>%
+                                        group_by(YEAR, PFMA, MONTH, DISPOSITION) %>% 
+                                        summarize(Est = sum(ESTIMATE, na.rm=T),
+                                                  SE = sum(STANDARD_ERROR, na.rm=T)) %>% 
+                                        pivot_wider(names_from=DISPOSITION, values_from=c(Est, SE)) %>%
+                                        select(YEAR, PFMA, MONTH, Est_Kept, `Est_Released Legal`),
+                                      
+                                      by=c("YEAR", 
+                                           "MONTH", 
+                                           "AREA" = "PFMA")) %>%
+  full_join(data.frame(AREA=c("127", "27", "126", "26", "125", "25", "124", "24", "123", "23", "121", "22", "21", "20")),
+            .,
+            by="AREA")
+
 ```
 
 <br> 
@@ -76,11 +106,11 @@ Definitions of natural, hatchery and unknown origin Chinook:
 
 - A fish is assumed Natural origin if an otolith is returned as "Not Marked" and the adipose fin is intact. PBT is not currently considered as it is stock/facility-specific, and would likely only apply to very recent RYs (2022/2023). 
   + This assumption may not be appropriate in cases where hatchery fish are not thermally marked AND have no other identifier (probably rare? Perhaps US?).
-  + Intact adipose fins *alone* are NOT evidence of a natural fish, and are considered "Unknown" origin (see below)
+  + Intact adipose fins *alone* are NOT evidence of a natural fish, and are considered "Unknown" origin unless accompanied by more data
 - A fish is Hatchery origin if it has an adipose clip, a thermal mark, a CWT, and/or a PBT BY assignment (in recent years).
-  + Note there are some rare cases of wild-tagging programs in Yukon/Alaska, but these are not expected to show up in great numbers for Chinook. 
+  + Note there are some rare cases of CWT wild-tagging programs in Yukon/Alaska, but these are not expected to show up in great numbers for Chinook. 
 - A fish is Unknown origin if it has an intact adipose and no other mark or tag to inform further, e.g., destroyed or missing otolith, missing or lost tag, no  samples analyzed, etc.) 
-- Stock ID is assigned in order of reliability: CWT > PBT > Otolith > GSI
+- Stock ID is assigned in order of reliability: CWT > PBT > Otolith > GSI. This is determined in the CREST database but is currently under review (PBT may shift to be more reliable). 
 
 <br>
 
@@ -98,6 +128,90 @@ The following caveats/assumptions must be taken into consideration when interpre
 <br>
 
 **Please keep in mind sample rates for these areas are below ideal levels, so conclusions drawn should be very careful. Please read the last section that lays out the sample rates (i.e., % of kept catch sampled) by month and year!"**
+
+<br>
+
+<br>
+
+### WCVI: Nitinat catch across all WCVI PFMAs (27-20 and offshore) 
+
+Proportion of legal sized biosamples that return as Nitinat in each Area applied to kept, legal catch estimates for 2017-2023 (note 2023 biodata still incomplete). 
+
+<br>
+
+#### All Nitinat-origin across WCVI
+
+Applying stock comp %s from creel biosamples to estimated catch by Month/Area/Year. Note 2023 is incomplete as of January 2025. 
+
+```{r}
+# Helpers for graphing ------------------
+# WCVIcrestBDWR.catEst.sj$AREA <- factor(WCVIcrestBDWR.catEst.sj$AREA, levels=c("127", "27", "126", "26", "125", "25", "124", "24", "123", "23", "121", "22", "21", "20", ordered=T))
+# WCVIcrestBDWR.catEst.sj$MONTH <- factor(WCVIcrestBDWR.catEst.sj$MONTH, levels=month.name)
+#
+
+pdf(file = here::here("outputs", "figures", "WCVI Nitinat catch estimate map 2017-2023.pdf"),   
+    width = 11, # The width of the plot in inches
+    height = 8.5) # The height of the plot in inches
+
+# Heatmap of all WCVI Nitinat catch estimates all years ------------------
+#plotly::ggplotly(
+ggplot(data = WCVIcrestBDWR.catEst.Nit %>% 
+         group_by(YEAR, MONTH, AREA, isNit1) %>% 
+         summarize(n_lvl1 = sum(n, na.rm=T),
+                   Est_Kept = unique(Est_Kept),
+                   `Est_Released Legal` = unique(`Est_Released Legal`))  %>%
+         group_by(YEAR, MONTH, AREA) %>% 
+         mutate(AreaMonthTotalSamples = sum(n_lvl1, na.rm=T),
+                propn_AreaMonth = n_lvl1/AreaMonthTotalSamples,
+                estKeptByID = propn_AreaMonth*Est_Kept,
+                inverse_estKeptByID = case_when(grepl("Other", isNit1) ~ Est_Kept-estKeptByID,
+                                                TRUE ~ estKeptByID),
+                inverse_estKeptByID = case_when(inverse_estKeptByID==0 ~ NA,
+                                                TRUE ~ inverse_estKeptByID)) %>%
+         filter(!is.na(YEAR),
+                !(grepl("Other", isNit1) & propn_AreaMonth<1 & estKeptByID!=inverse_estKeptByID)) %>%
+         ungroup() %>%
+         full_join(data.frame(AREA=c("127", "27", "126", "26", "125", "25", "124", "24", "123", "23", "121", "22", "21",
+                                     "20")) %>%
+                     mutate(YEAR=rep(2023, nrow(.)),
+                            MONTH=rep("May", nrow(.))),
+                   .,
+                   by=c("YEAR", "MONTH", "AREA")) %>%
+         complete(., YEAR, MONTH, AREA)) +
+  # geom_ribbon(data = WCVIcrestBDWR.catEst.Nit %>% 
+  #               filter(YEAR %in% c(2017:2019)),
+  #             aes(ymin=127, ymax=20, x=factor(MONTH, levels=month.name)),
+  #             fill="gray80", colour="gray80", alpha=0.2, size=40) +
+  scale_x_discrete(limits = c("May", "June", "July", "August", "September")) +
+  scale_y_discrete(limits = rev(c("127", "27", "126", "26", "125", "25", "124", "24", "123", "23", "121", "22", "21", "20"))) +
+
+  geom_point(aes(y=AREA, x=factor(MONTH, levels=month.name), fill=inverse_estKeptByID, colour=inverse_estKeptByID, 
+                 #text=paste("Estimated # kept=", round(estKeptByID,0), "\nBased on # confirmed biosamples, n=", n_lvl1)
+  ), 
+  shape=22, size=6, alpha=0.8) +
+  scale_fill_binned(breaks=seq(0, 500, by=100), type="viridis", na.value="transparent") +
+  scale_colour_binned(breaks=seq(0, 500, by=100), type="viridis", na.value="gray80") +
+  labs(x="", y="Area", fill="Estimated # Legal, Kept \nNitinat-origin Chinook", 
+       colour="Estimated # Legal, Kept \nNitinat-origin Chinook") +
+  theme_bw() +
+  facet_wrap(~YEAR, ncol=2, strip.position = "right") + 
+  theme(axis.title = element_text(face="bold", size=22),
+        axis.text = element_text(colour="black", size=20),
+        legend.title = element_text(face="bold", size=18),
+        legend.text = element_text(size=17),
+        legend.key.size = unit(15, "mm"),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        strip.text = element_text(size=20))+
+    geom_ribbon(data = WCVIcrestBDWR.catEst.Nit %>% 
+                filter(YEAR == 2023) %>% 
+                group_by(AREA, MONTH) %>% 
+                summarize(),
+              aes(ymin=min(AREA), ymax=max(AREA), x=factor(MONTH, levels=month.name)),
+              fill="red", colour="red", alpha=1, size=40, stat="identity") 
+#)
+```
+
 
 <br>
 
