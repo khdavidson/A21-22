@@ -159,11 +159,11 @@ wcviPFMA_NitCatEst <- left_join(pfma_sf,
 
 
 
-# Sport Fishery Biodata Results
+# **Sport Fishery Biodata Results**
 
 <br>
 
-## Assumptions and caveats
+## **Assumptions and caveats**
 
 Definitions of natural, hatchery and unknown origin Chinook:
 
@@ -196,17 +196,17 @@ The following caveats/assumptions must be taken into consideration when interpre
 
 <br>
 
-## WCVI: Nitinat catch across all WCVI PFMAs (27-20 and offshore) 
+## **WCVI: Nitinat catch across all WCVI PFMAs (27-20 and offshore)** 
 
 Proportion of legal sized biosamples that return as Nitinat in each Area applied to kept, legal catch estimates for 2017-2023 (note 2023 biodata still incomplete). 
 
 <br>
 
-### All Nitinat-origin across WCVI (Hatchery Nit + Natural Nit)
+### **All Nitinat-origin across WCVI (hatchery + natural)**
 
 Applying stock comp %s from creel biosamples to estimated catch by Month/Area/Year. Note 2023 and 2024 are incomplete as of January 2025. 
 
-```{r nitHeat, out.width='1200px', out.height='800px', fig.cap='Kept catch estimates of legal size (>45cm and <=80cm) Nitinat-origin Chinook across WCVI PFMAs, organized from north (PFMA 127) to south (PFMA 20). Estimates calculated by applying the proportion of Nitinat chinook detected in creel biosamples to total year-month-area catch estimates. Interactive plot; hover over data points on heat map to see sample sizes and catch estimates. **NOTE 2023 and 2024 samples are incomplete as of January 2025.**'}
+```{r nitHeat, out.width='1200px', out.height='700px', fig.cap='Kept catch estimates of legal size (>45cm and <=80cm) Nitinat-origin Chinook across WCVI PFMAs, organized from north (PFMA 127) to south (PFMA 20). Estimates calculated by applying the proportion of Nitinat chinook detected in creel biosamples to total year-month-area catch estimates. Interactive plot; hover over data points on heat map to see sample sizes and catch estimates. **NOTE 2023 and 2024 samples are incomplete as of January 2025.**'}
 
 # Heatmap of all WCVI Nitinat catch estimates all years ------------------
 
@@ -214,8 +214,6 @@ Applying stock comp %s from creel biosamples to estimated catch by Month/Area/Ye
 # pdf(file = here::here("outputs", "figures", "WCVI Nitinat catch estimate heatmap 2017-2023.pdf"),   
 #     width = 11, # The width of the plot in inches
 #     height = 8.5) # The height of the plot in inches
-
-
 
 plotly::ggplotly(
   ggplot(data = WCVIcrestBDWR.catEst.Nit %>% 
@@ -279,7 +277,9 @@ plotly::ggplotly(
 <br>
 
 
-### Hatchery Nitinat across WCVI 
+### **Hatchery Nitinat across WCVI** 
+
+<br>
 
 #### 2023 Catch estimate map
 
@@ -445,6 +445,9 @@ ggplot() +
 #dev.off()
 ```
 
+<br>
+
+<br>
 
 
 
@@ -463,39 +466,11 @@ ggplot() +
 
 
 
+## **Area 21/121 catch composition**
 
-## Area 21/121 Heatmaps (Regional IDs)
+```{r echo=F, message=F, warning=F}
 
-```{r echo=T, message=F, warning=F}
-# ================= Region-level monthly % composition =================
-# area21offshoreREGION.BDWR <- WCVIcrestBDWR %>% 
-#   filter(AREA %in% c("21", "121"), SAMPLE_TYPE=="Sport", SPECIES==124, DISPOSITION=="Kept", LEGAL_STATUS=="LEGAL", 
-#          `(R) RESOLVED ORIGIN-REGION ID`%notin%c("Unknown NA", "Unknown Unknown (<75% GSI assignment)")) %>% 
-#   group_by(YEAR, MONTH, AREA, `(R) RESOLVED ORIGIN-REGION ID`) %>% 
-#   summarize(n = n()) %>% 
-#   group_by(YEAR, MONTH, AREA) %>%
-#   mutate(AreaMonthSampleTotal = sum(n),
-#          AreaPropnMonthlySamples=n/AreaMonthSampleTotal) 
-# 
-# 
-# 
-# # ================= Stock-level monthly % composition =================
-# # FOCUS ON NITINAT SPECIFICALLY
-# # 1. Summarize biosampling results and group as Nitinat, Non-Nitinat, and Unknown -----------------
-# area21offshoreSTOCK.BDWR <- crestBDWR %>% 
-#   filter(AREA %in% c("21", "121"), SAMPLE_TYPE=="Sport", SPECIES==124, DISPOSITION=="Kept", LEGAL_STATUS=="LEGAL", `(R) RESOLVED ORIGIN-STOCK ID`%notin%c("Unknown NA", "Unknown Unknown (<75% GSI assignment)")) %>% 
-#   mutate(isNitinat = case_when(grepl("Nitinat", `(R) RESOLVED ORIGIN-STOCK ID`) ~ `(R) RESOLVED ORIGIN-STOCK ID`,
-#                                !grepl("Nitinat", `(R) RESOLVED ORIGIN-STOCK ID`) & `(R) Origin`!="Unknown" ~ 
-#                                  paste0(`(R) Origin`, " ", "Non-Nitinat"),
-#                                !grepl("Nitinat", `(R) RESOLVED ORIGIN-STOCK ID`) & `(R) Origin`=="Unknown" ~ 
-#                                  "Unknown Non-Nitinat")) %>% 
-#   group_by(YEAR, AREA, MONTH, isNitinat) %>% 
-#   summarize(n = n()) %>% 
-#   group_by(YEAR, MONTH, AREA) %>%
-#   mutate(AreaMonthSampleTotal = sum(n),
-#          PropnMonthlySamplesNitinat=n/AreaMonthSampleTotal)  
-
-# 2. Join Biodata composition to catch and calculate # caught by ID -----------------
+# Join ALL BDWR  to catch and calculate # caught by ID (for Area 21/121) -----------------
 WCVIcrestBDWR.catEst <- left_join(WCVIcrestBDWR %>%
                                     filter(SAMPLE_TYPE=="Sport", SPECIES==124, DISPOSITION=="Kept", LEGAL_STATUS=="LEGAL") %>% 
                                     group_by(YEAR, MONTH, AREA, RESOLVED_STOCK_ORIGIN, RESOLVED_STOCK_ROLLUP) %>% 
@@ -512,8 +487,7 @@ WCVIcrestBDWR.catEst <- left_join(WCVIcrestBDWR %>%
                                   by=c("AREA"="PFMA", "YEAR", "MONTH"))  %>%
   mutate(NitRegionID = case_when(grepl("Nitinat", RESOLVED_STOCK_ORIGIN) ~ RESOLVED_STOCK_ORIGIN,
                                  TRUE ~ RESOLVED_STOCK_ROLLUP)) %>%
-  relocate(NitRegionID, .after=RESOLVED_STOCK_ROLLUP) %>%
-  print()
+  relocate(NitRegionID, .after=RESOLVED_STOCK_ROLLUP) 
 ```
 
 
@@ -577,7 +551,7 @@ plotly::ggplotly(
 
 <br>
 
-```{r a121comp, out.width='1300px', out.height='500px', fig.cap='Estimated kept, legal (<45cm, >80cm) Chinook catch in Area 21. ID is to the Region-level in all cases except for Nitinat River. Estimates calculated by applying the proportion of Nitinat chinook detected in creel biosamples to total year-month-area catch estimates. **NOTE 2023 and 2024 samples in incomplete as of January 2025.**'}
+```{r a121comp, out.width='1300px', out.height='500px', fig.cap='Estimated kept, legal (<45cm, >80cm) Chinook catch in Area 121. ID is to the Region-level in all cases except for Nitinat River. Estimates calculated by applying the proportion of Nitinat chinook detected in creel biosamples to total year-month-area catch estimates. **NOTE 2023 and 2024 samples in incomplete as of January 2025.**'}
 
 # AREA 121
 
@@ -637,7 +611,7 @@ plotly::ggplotly(
 
 <br>
 
-## Sample Rate
+## **Sample rate**
 
 Sample rate is simply the number of samples collected divided by the estimated kept catch, calculated for each month/area/year. It can give an indication of sampling effort to interpret catch trends. 
 
@@ -658,24 +632,30 @@ samp_Rate <- left_join(catEst %>%
 ```
 
 
-```{r sampRateFig, fig.cap='Sample rate of Chinook kept legal catch in Area 21 and 121 (i.e., % of kept legal catch sampled each month). Note that September 2018 sample rate was removed as it was highly uncertain. Sample rate represents the number of samples taken compared to CREST catch point estimates and does not take into account catch uncertainty.'}
+```{r sampRateFig, out.width='1500px', out.height='600px', fig.cap='Sample rate or "sampling effort" of kept legal Chinook catch in all WCVI areas from 2017-2024. Sampling rate or effort is defined as the number of legal-sized biological samples collected in each area-month-year divded by the total kept legal catch estimate for that area-month-year. Catch estimates are point estimates; this does not take into account uncertainty around catch estimates.'}
 
 ggplot(data=samp_Rate %>%
          filter(MONTH%in%c("May", "June", "July", "August", "September")), 
        aes(x=factor(MONTH, levels=month.name), y=SampleRate, group=as.factor(YEAR), colour=as.factor(YEAR), fill=as.factor(YEAR), 
            #text=paste0(MONTH, sep=" ", YEAR)
        )) +
-  geom_line(size=1, alpha=0.9) +
-  geom_point(size=3, alpha=0.8, shape=21) +
+  geom_line(size=0.5, alpha=0.7) +
+  geom_point(size=2, alpha=0.7, shape=21) +
   scale_y_continuous(labels = scales::percent, limits = c(0,0.3)) +
-  labs(x="", y="Sample Rate", fill="", colour="") +
+  scale_x_discrete(labels=c("May","Jun","Jul","Aug","Sept")) +
+  labs(x="", y="Sample Rate") +
   theme_bw() +
-  theme(axis.text = element_text(size=15, colour="black"),
-        axis.title = element_text(size=17, face="bold"),
-        legend.position = c(0.9,0.2),
-        legend.text = element_text(size=12),
-        strip.text = element_text(size=14)) +
-  facet_wrap(~PFMA, nrow=2, scales="free_y") 
+  theme(axis.text = element_text(size=8, colour="black"),
+        axis.text.x = element_text(angle=45, hjust=1),
+        axis.title = element_text(size=9, face="bold"),
+        legend.background = element_rect(colour="black"),
+        legend.position = c(0.85, 0.1),
+        legend.text = element_text(size=7),
+        legend.title = element_blank(),
+        strip.text = element_text(size=9)) +
+  facet_wrap(~PFMA, nrow=3, scales="free_y") +
+  guides(fill = guide_legend(ncol = 2),
+         colour = guide_legend(ncol = 2))
 ```
 
 <br>
@@ -736,6 +716,7 @@ openxlsx::writeData(Nit.WCVIrec, sheet="All Nitinat catch estimates",
                             ) %>%
                       rename(`Stock ID2` = isNit2) %>%
                       ungroup() %>%
+                      filter(!is.na(YEAR)) %>% 
                       full_join(data.frame(AREA=c("127", "27", "126", "26", "125", "25", "124", "24", "123", "23", "121", "22", 
                                                   "21", "20")) %>%
                                   mutate(YEAR=rep(2023, nrow(.)),
@@ -764,6 +745,7 @@ openxlsx::writeData(Nit.WCVIrec, sheet="Nitinat Hat catch estimates",
                             ) %>%
                       rename(`Stock ID3` = isNit3) %>%
                       ungroup() %>%
+                      filter(!is.na(YEAR)) %>% 
                       full_join(data.frame(AREA=c("127", "27", "126", "26", "125", "25", "124", "24", "123", "23", "121", "22", 
                                                   "21", "20")) %>%
                                   mutate(YEAR=rep(2023, nrow(.)),
