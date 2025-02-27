@@ -35,9 +35,10 @@ analysis_year <- 2024
 
 
 
-# ============================= Load RAW SIL data ============================
+# ============================= EXCEL SIL DATA ============================
 
 # Raw SIL entry for Nitinat mainstem ---------------------
+
 nit.sil <- list.files(paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
                              analysis_year,
                              "/SILs/Area 21-22/Nitinat River/"),
@@ -50,6 +51,7 @@ nit.sil <- list.files(paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/
 
 
 # Raw SIL entry for Tribs (incl Lake tribs) ---------------------
+
 tribs.sil <- list.files(paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
                                analysis_year,
                                "/SILs/Area 21-22/Area 22 tributaries/"),
@@ -60,30 +62,10 @@ tribs.sil <- list.files(paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operation
 
 
 
-# ============================= Load SIL+AUC DATABASE data ============================
+# ============================= SIL+AUC DATABASE data ============================
 
-# Waterbody values (to join to EscEStSppHeader table) ---------------------
-wbdyVals <- readxl::read_excel(path=here::here("data", "escapement", "prelim-inseason", "WaterbodiesValues.xlsx")) %>% 
-  mutate(AREA = case_when(NAME=="TUCK LAKE" ~ "22",
-                          TRUE ~ AREA)) %>%
-  select(AREA, NAME, WATERSHED_CDE) %>% 
-  rename(WatershedCode = WATERSHED_CDE) %>% 
-  filter(!is.na(WatershedCode)) %>% 
-  group_by(AREA, NAME, WatershedCode) %>% 
-  filter(AREA %in% c(20,21,22)) %>% 
-  group_by(WatershedCode) %>% 
-  mutate(n=n(),
-         system = case_when(n>1 ~ paste0("system", seq(1,length(n),by=1)),
-                            n==1 ~ "system1")) %>% 
-  group_by(WatershedCode) %>% 
-  pivot_wider(names_from=system, values_from=NAME) %>% 
-  #select(-n) %>% 
-  unite("SystemName", system1:system3, sep=", ", remove=T, na.rm=T) %>% 
-  mutate(SystemName = str_to_title(SystemName)) %>%
-  print()
+# AUC Data Analysis Table ---------------------
 
-
-# AUC Data Table for analysis ---------------------
 AUCdataTable <- readxl::read_excel(path=paste0(here::here("data", "escapement", "prelim-inseason", 
                                                           "AUC_DataAnalysisTable_area21-22_"),
                                                analysis_year,
@@ -91,6 +73,7 @@ AUCdataTable <- readxl::read_excel(path=paste0(here::here("data", "escapement", 
 
 
 # EscEstSppHeader table ---------------------
+
 escEstSpp <- readxl::read_excel(path=paste0(here::here("data", "escapement", "prelim-inseason", 
                                                        "EscEstSppHeader_area20-22_"),
                                             analysis_year,
@@ -105,16 +88,36 @@ escEstSpp <- readxl::read_excel(path=paste0(here::here("data", "escapement", "pr
   relocate(AdultMidResidenceTime_R, .before = AdultLongResidenceTime) %>%
   relocate(JackMidResidenceTime_R, .before = JackLongResidenceTime) %>% 
   relocate(AdultExpAUCMidValue_R, .before=AdultExpAUCHighValue) %>% 
-  relocate(JackExpAUCMidValue_R, .before=JackExpAUCHighValue) 
+  relocate(JackExpAUCMidValue_R, .before=JackExpAUCHighValue) %>% 
+  mutate(AdultNaturalReco = case_when(AdultNaturalReco<0 ~ 0,
+                                      TRUE ~ AdultNaturalReco))
+
 
 
 # EscEstAUCResults table --------------------- 
+
 escEstAUC <- readxl::read_excel(path=paste0(here::here("data", "escapement", "prelim-inseason", 
                                                        "EscEstAUCResults_area20-22_"),
                                             analysis_year,
                                             ".xlsx")) %>% 
   left_join(.,
-            wbdyVals,
+            readxl::read_excel(path=here::here("data", "escapement", "prelim-inseason", "WaterbodiesValues.xlsx")) %>% 
+              mutate(AREA = case_when(NAME=="TUCK LAKE" ~ "22",
+                                      TRUE ~ AREA)) %>%
+              select(AREA, NAME, WATERSHED_CDE) %>% 
+              rename(WatershedCode = WATERSHED_CDE) %>% 
+              filter(!is.na(WatershedCode)) %>% 
+              group_by(AREA, NAME, WatershedCode) %>% 
+              filter(AREA %in% c(20,21,22)) %>% 
+              group_by(WatershedCode) %>% 
+              mutate(n=n(),
+                     system = case_when(n>1 ~ paste0("system", seq(1,length(n),by=1)),
+                                        n==1 ~ "system1")) %>% 
+              group_by(WatershedCode) %>% 
+              pivot_wider(names_from=system, values_from=NAME) %>% 
+              #select(-n) %>% 
+              unite("SystemName", system1:system3, sep=", ", remove=T, na.rm=T) %>% 
+              mutate(SystemName = str_to_title(SystemName)),
             na_matches="never", relationship="many-to-one") %>% 
   #<<<< UPDATE HELI DATE EACH YEAR! >>>>>
   mutate(method = case_when(DateRange== "2024/10/11 - 2024/10/23" ~ "heli",
@@ -122,10 +125,10 @@ escEstAUC <- readxl::read_excel(path=paste0(here::here("data", "escapement", "pr
 
 
 
-# ============================= Load EPRPO HATCHERY data ============================
+# ============================= EPRPO HATCHERY ============================
 
-# Hatchery swim-ins from EPRO ----------------------------
-# CHINOOK:
+# CHINOOK swim-ins ----------------------------
+
 nrh.cn <- list.files(paste0(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
                             analysis_year,
                             "/SILs/Area 21-22/"),
@@ -134,7 +137,9 @@ nrh.cn <- list.files(paste0(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operati
   list_rbind() %>% 
   select_all(~gsub("\\s+|\\.", "", .))  
 
-# CHUM:
+
+# CHUM swim-ins ----------------------------
+
 nrh.cm <- list.files(paste0(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
                             analysis_year,
                             "/SILs/Area 21-22/"),
@@ -144,7 +149,8 @@ nrh.cm <- list.files(paste0(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operati
   select_all(~gsub("\\s+|\\.", "", .))  
 
 
-# COHO:
+# COHO swim-ins ----------------------------
+
 nrh.co <- list.files(paste0(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
                              analysis_year,
                              "/SILs/Area 21-22/"),
@@ -155,9 +161,8 @@ nrh.co <- list.files(paste0(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operati
 
 
 
-# ============================= Load AUXILIARY data ============================
+# ============================= ENVIRO ============================
 
-# Enviro ----------------------------
 nit.water <- 
   lapply(list.files(path = here::here("data", "enviro"),
                     pattern = "NitinatWaterLevelHydrometData_20*",
@@ -182,7 +187,10 @@ nit.water <-
 
 
 
+# ============================= HISTORICAL DATA ============================
+
 # Run timing ----------------------------
+
 nit.rtStWk <- readxl::read_excel("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/run timing tables (updated).xlsx", 
                                  sheet="Nitinat", guess_max=10000, trim_ws=T, range=cellranger::cell_limits(c(4, 1), c(NA, NA))) %>% 
   select(-c(`...24`:`...75`)) %>%
@@ -205,8 +213,8 @@ nit.rtStWk$stat_week <- factor(nit.rtStWk$stat_week,
                                         "121","122","123","124", ordered=T))
 
 
-# Escapement ----------------------------
-# NuSEDS data
+# TIME SERIES ----------------------------
+
 nit.escHistorical <- list.files(path=here::here("data", "escapement"),
                                 pattern = "NuSEDS_Area21-22_escapement_", full.names = T) %>% 
   map(~readxl::read_excel(path=.x, trim_ws=T, guess_max=20000, sheet="Data"), id="path") %>% 
@@ -216,6 +224,9 @@ nit.escHistorical <- list.files(path=here::here("data", "escapement"),
 NEI <- readxl::read_excel(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/NEW ESCAPEMENT INDEX.xls", sheet = "EscData", skip=4) %>% 
   filter(System=="Nitinat")
 
+
+
+# ESCAPEMENT GOALS ----------------------------
 
 nit.esc.goal <- read.csv(here::here("data", "escapement", "wcviCK-BootstrappedRPs.csv")) %>% 
   filter(Stock=="Nitinat")
@@ -307,14 +318,6 @@ Snorkel and heli surveys were primarily timed for Chinook and Chum. Sockeye coun
 Counts are expanded for both % population surveyed and/or observer efficiency, depending on survey conditions.  
 
 ```{r}
-# ggplot() +
-#   geom_bar(data=ver23 %>% filter(ShortSpecies=="SK") %>% pivot_longer(LiveAdults:ExpDeadJacks, names_to="est_type", values_to="n") %>% filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
-#            aes(x=as.Date(Date), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
-#   labs(x="", y="Adult Sockeye counts", fill="Expansion", colour="Expansion") +
-#   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
-#   theme_bw() +
-#   theme(axis.text.x = element_text(angle=45, hjust=1))
-
 ggplot() +
   geom_bar(data=AUCdataTable %>% 
              filter(ShortSpecies=="SK") %>% 
@@ -340,9 +343,9 @@ Figure: Live Adult sockeye raw counts (blue) and counts expanded for % populatio
 
 
 ```{r}
-pdf(file = here::here("outputs", "figures", paste0(analysis_year, " SK count-enviro.pdf")),   
-    width = 11, # The width of the plot in inches
-    height = 8.5) # The height of the plot in inches
+#pdf(file = here::here("outputs", "figures", paste0(analysis_year, " SK count-enviro.pdf")),   
+#    width = 11, # The width of the plot in inches
+#    height = 8.5) # The height of the plot in inches
 
 ggplot() +
   # Plot water data -------------
@@ -368,13 +371,13 @@ geom_bar(data=nit.sil %>%
   scale_x_date(date_breaks="7 day", date_labels="%b %d") +
   labs(x="", y="Sockeye live count (adults)", fill="Segment", colour="Segment") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle=45, hjust=1, size=20),
-        axis.text = element_text(size=20),
-        axis.title = element_text(face="bold", size=22),
-        legend.text = element_text(size=17),
-        legend.title = element_text(size=18))
+  theme(axis.text.x = element_text(angle=45, hjust=1, size=10),
+        axis.text = element_text(size=10),
+        axis.title = element_text(face="bold", size=12),
+        legend.text = element_text(size=15),
+        legend.title = element_text(size=15))
 
-dev.off()
+#dev.off()
 ```
 
 Figure: Sockeye counts (raw live adults), water levels (blue line)
@@ -509,7 +512,7 @@ ggplot() +
   theme_bw()
 ```
 
-Figure: AUC curve for Nitinat mainstem Sockeye. Note in 2023 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
+Figure: AUC curve for Nitinat mainstem Sockeye. Note in 2024 this had already excluded the heli survey, but in future would likely also include the flight for reference. 
 
 <br>
 
@@ -555,7 +558,7 @@ escEstSpp %>%
 <br>
 
 ### Estimate decision:
-For 2024 went with expanded AUC estimate (SL=35 days) as we had an early spot-check swim in pools that was a good indicator of SK timing/abundance early-on. The AUC curve is also reasonable. There were no SK noted in tribs and there is no enhancement of SK, so this gives a natural spawner/total escapement estimate of `r escEstSpp %>% filter(ShortSpecies=="SK", SystemName=="Nitinat River, Nitinat Lake") %>% pull(AdultExpAUCMidValue_R)` adults and `r escEstSpp %>% filter(ShortSpecies=="SK", SystemName=="Nitinat River, Nitinat Lake") %>% pull(JackExpAUCMidValue_R)` jack.  
+For 2024 went with expanded AUC estimate (SL=35 days) as we had an early spot-check swim in pools that was a good indicator of SK timing/abundance early-on. The AUC curve is OK because of this early check. There were no SK noted in tribs and there is no enhancement of SK, so this gives a natural spawner/total escapement estimate of `r escEstSpp %>% filter(ShortSpecies=="SK", SystemName=="Nitinat River, Nitinat Lake") %>% pull(AdultExpAUCMidValue_R)` adults and `r escEstSpp %>% filter(ShortSpecies=="SK", SystemName=="Nitinat River, Nitinat Lake") %>% pull(JackExpAUCMidValue_R)` jack.  
 
 <br>
 
@@ -1296,6 +1299,7 @@ escEstSpp %>%
 <br>
 
 ### Estimate decision:
+
 For 2024 used expanded AUC with SL=9 days. Tons of chum this year constantly piling in and spawning, but always tons of fresh fish seen on every swim despite the numbers already in the river. Did not remove swim-ins because most were into the hatchery prior to the peak count (heli, full system), and spawning was definitely underway by the peak count (noted fully spawning throughout habitat) so it's unlikely there was much duplication of fish counted on snorkel surveys. The AUC estimate gives about 260k chum for the mainstem but does not include Worthless and Little Nitinat spawners (these are in addition to the mainstem). **Results in a natural spawner estimate of `r escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Nitinat River, Nitinat Lake") %>% pull(AdultExpAUCMidValue_R)` adult chum** plus broodstock `r nrh.cm %>% filter(ParentActivityType=="Adult Capture", CaptureMethod!="Gillnet") %>% summarize(n=sum(TotalCount)) %>% pull(n)` and plus Little Nitinat (`r escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Little Nitinat River") %>% pull(AdultNaturalReco)`) and Worthless (`r escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Worthless Creek") %>% pull(AdultNaturalReco)`) means a total system escapement of `r escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Nitinat River, Nitinat Lake") %>% pull(AdultExpAUCMidValue_R) + nrh.cm %>% filter(ParentActivityType=="Adult Capture", CaptureMethod!="Gillnet") %>% summarize(n=sum(TotalCount)) %>% pull(n) + escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Little Nitinat River") %>% pull(AdultNaturalReco) + escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Worthless Creek") %>% pull(AdultNaturalReco)`
 **note swim-ins from EPRO and Caroline's form are off by 200 females, so estimate is +/- 200 fish until can sort it out at the meeting**
 *This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
@@ -1340,7 +1344,7 @@ ggplot()  +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
 
-Figure: 2023 preliminary adult Chum escapement estimate (red outline) relative to historical adult (blue) and unspecified (gray) escapement estimates. There was no Chum estimate available in 1990. 
+Figure: 2024 preliminary adult Chum escapement estimate (red outline) relative to historical adult (blue) and unspecified (gray) escapement estimates. There was no Chum estimate available in 1990. 
 
 <br>
 
@@ -1741,6 +1745,33 @@ Figure: `r analysis_year` preliminary adult Chinook escapement estimate (red out
 
 No consistent WCVI pink runs. 
 
+<br>
+
+## Area 21-22 raw vs expanded counts
+
+Counts are expanded for both % population surveyed and/or observer efficiency, depending on survey conditions.  
+
+```{r}
+ggplot() +
+  geom_bar(data=AUCdataTable %>% 
+             filter(ShortSpecies=="PK") %>% 
+             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
+             filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
+           aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position="dodge", alpha=0.5) +
+  labs(x="", y="Adult Coho counts", fill="Expansion", colour="Expansion") +
+  scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, hjust=1),
+        legend.position = "bottom") +
+  facet_wrap(~Section_AreaInspected, scales="free_y")
+```
+
+Figure: Live Adult Chinook raw counts (blue) and counts expanded for % population and/or OE (pink). 
+
+<br>
+
+<br>
+
 ## Area 21-22 preliminary escapement estimates 
 
 <br>
@@ -1761,7 +1792,45 @@ escEstSpp %>%
   kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
 ```
 
+<br>
 
+### Estimate decision:
+
+No pinks observed in 2024.
+
+<br>
+
+<br>
+
+## `r analysis_year` compared to historical escapement
+
+<br>
+
+```{r}
+ggplot()  +
+  geom_bar(data=nit.escHistorical %>% 
+             filter(`Waterbody Name` %in% c("NITINAT RIVER", "WORTHLESS CREEK", "NONAME CREEK", "JASPER CREEK", 
+                                            "LITTLE NITINAT RIVER", "PARKER CREEK"), `Species Qualified`=="PKE"), 
+           aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
+  geom_bar(data=nit.escHistorical %>%  
+             filter(`Waterbody Name` %in% c("NITINAT RIVER", "WORTHLESS CREEK", "NONAME CREEK", "JASPER CREEK", 
+                                            "LITTLE NITINAT RIVER", "PARKER CREEK"), `Species Qualified`=="PKE"), 
+           aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
+  geom_bar(data=escEstSpp %>% 
+             filter(ShortSpecies=="PK", AREA!="20", grepl("Nitinat", SystemName)) %>% 
+             select(Year, SystemName, AdultNaturalReco) %>% 
+             summarize(n=sum(AdultNaturalReco)), 
+           aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   scale_x_continuous(breaks=seq(min(nit.escHistorical$`Analysis Year`), analysis_year, by=2)) +
+  labs(x="Return Year", y="Pink spawners") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+```
+
+Figure: 2024 preliminary adult Chum escapement estimate (red outline) relative to historical adult (blue) and unspecified (gray) escapement estimates. There was no Chum estimate available in 1990. 
+
+<br>
+
+<br>
 
 
 
