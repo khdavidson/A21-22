@@ -3,7 +3,7 @@
 # to update WCVI Chum Forecast file
 
 
-# Load library and helper ----------------
+# Load library and helpers ----------------
 library(tidyverse)
 "%notin%" <- Negate("%in%")
 analysis_year <- 2024
@@ -11,13 +11,14 @@ analysis_year <- 2024
 
 
 # Read data from network ----------------
+# File name changes a lot so may have to tweak "pattern" argument 
 chum_ages <- readxl::read_excel(path=list.files(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/SC_BioData_Management/6-Scale/Age_Results/Atlegay/",
                                                 pattern="A-TlegayChum_up-to-2024", full.names = T),
                                 sheet=2)
                                   
                                   
 
-############################################################################################################
+############################################################################################################################################################
 
 # Age summary - finescale (see if there are major differences b/w Hobiton and Nitinat)
 
@@ -36,9 +37,9 @@ Area22_chum_ages_FINE <- chum_ages %>%
 
 
 
-############################################################################################################
+############################################################################################################################################################
 
-# Age summary - coarse (all results for forecast file)
+# Age summary - coarse (all results pooled for forecast file)
 
 Area22_chum_ages_COARSE <- chum_ages %>% 
   filter(PROJECTYEAR==analysis_year, StatArea=="22") %>% 
@@ -57,9 +58,10 @@ Area22_chum_ages_COARSE <- chum_ages %>%
 
 ############################################################################################################
 
-# EXPORT 
 
-# Create readme
+# ================== EXPORT ==================
+
+# Create readme ---------------------------
 readme <- data.frame(`1` = c("date rendered:", 
                              "source R code:", 
                              "source data file:"
