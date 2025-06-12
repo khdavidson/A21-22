@@ -25,11 +25,6 @@ escapement_year <- 2025
 # ================== ENVIRO DATA ================== 
 # Water data ---------------------------------
 nitinat.water <- 
-  # lapply(list.files(path = here::here("data", "enviro"),
-  #                   pattern = "^NitinatWaterLevelHydrometData.*\\.xlsx$",
-  #                   full.names = TRUE), 
-  #        readxl::read_excel, sheet="Exported Data") %>% 
-  #do.call("cbind",.) %>%
   lapply(list.files(path = here::here("data", "enviro"),
                     pattern = "NitinatWaterLevelHydrometData_20*",
                     full.names = TRUE),
@@ -49,6 +44,12 @@ nitinat.water <-
         hour = case_when(hour==12 & stamp=="AM" ~ 0,
                          TRUE ~ hour)) %>%
   print()
+
+
+# Export compiled file for sharing: 
+writexl::write_xlsx(nitinat.water, paste0(here::here("data", "enviro", "Nitinat River weather station data "),
+                                          min(nitinat.water$year), "-", max(nitinat.water$year),
+                                          " (", Sys.Date(), ").xlsx"))
 
 
 
