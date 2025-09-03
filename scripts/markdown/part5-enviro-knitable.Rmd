@@ -1,5 +1,5 @@
 ---
-title: "part5-enviro-knitable"
+title: "Nitinat River environmental update"
 author: "South Coast StA"
 date: 'Last update: `r format(Sys.time(), sep="_", "%Y-%m-%d %H:%M")`'
 output: html_document
@@ -379,7 +379,13 @@ ggplot()+
         legend.title = element_blank())
 ```
 
+<br>
 
+## Weather forecast
+
+```{r}
+knitr::include_url("https://www.yr.no/en/print/forecast/2-6088637/Canada/British%20Columbia/Cowichan%20Valley%20Regional%20District/Nitinat%20Lake")
+```
 
 
 
