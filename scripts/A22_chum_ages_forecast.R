@@ -67,7 +67,7 @@ readme <- data.frame(`1` = c("date rendered:",
                              "source data file:"
                              ),
 `2` = c(as.character(Sys.Date()), 
-        "github...", 
+        "https://github.com/khdavidson/A21-22/blob/main/scripts/A22_chum_ages_forecast.R", 
         "SCD_Stad/SC_BioData_Management/6-Scale/Age_Results/Atlegay/A-TlegayChum_up-to-2024_sent5Mar2025.xlsx"
         )
 )
