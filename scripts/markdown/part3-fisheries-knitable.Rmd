@@ -18,12 +18,7 @@ knitr::opts_chunk$set(echo=F,  message=F, warning=F)
 
 # Load libraries ------------------
 library(tidyverse)
-# library(here)
-# library(readxl)
-# library(scales)
-# library(plotly)
-# library(bookdown)
-# library(kableExtra)
+
 
 
 # Load helpers ------------------
@@ -36,9 +31,9 @@ library(tidyverse)
 
 
 
-# ============================ Load data ============================
+# ============================ REC data ============================
 
-# Biodata w results ----------------------
+# CREST BDWR ----------------------
 WCVIcrestBDWR <- readxl::read_excel(path=list.files(path=#"//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/CHINOOK/WCVI_TERMINAL_RUN/Annual_data_summaries_for_RunRecons/CREST-BDWRcompile_base-files/2-Export-from-R/",
                                             here::here("data", "fisheries"),
                                           pattern="^R_OUT - Biological_Data_With_Results \\(.*\\) \\d{4}-\\d{4}\\.xlsx$", 
@@ -62,7 +57,7 @@ WCVIcrestBDWR <- readxl::read_excel(path=list.files(path=#"//ENT.dfo-mpo.ca/DFO-
   print()
 
 
-# Catch estimates ----------------------
+# CREST Catch estimates ----------------------
 catEst <- readxl::read_excel(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/Reg_Shares/FHM/SMCS/Salmon/FMCR_Fishery_Monitoring_Catch_Reporting/Recreational_CM/Catch_Data/SC Sport Catch Creel Sub-area Disposition (Master Do No Edit).xlsx", 
                              sheet="YTD") %>%
   filter(grepl("127|27|126|26|125|25|124|24|123|23|121|21|22|20", PFMA), YEAR>=2017, SPECIES=="CHINOOK SALMON") 
@@ -152,6 +147,15 @@ wcviPFMA_NitCatEst <- left_join(pfma_sf,
                                
                                by=c("STATAREA"="AREA")
 )
+
+
+
+# ============================ NITINAT data ============================
+nitAAB <- readxl::read_excel(path=list.files(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/CHINOOK/WCVI_TERMINAL_RUN/Annual_data_summaries_for_RunRecons/EPROcompile_base-files/2-Export-from-R/",
+                                             pattern="^R_OUT - All Adult Biosampling ALL FACILITIES WITH RESULTS",
+                                             full.names = T),
+                             sheet="All Facilities w RESULTS", guess_max=10000) %>% 
+  filter(grepl("nitinat", Spawning.Stock.Name, ignore.case=T))
 
 ```
 
@@ -776,4 +780,37 @@ openxlsx::saveWorkbook(Nit.WCVIrec,
 
 
 ```
+
+<br>
+
+<br>
+
+# DFN Gillnet vs. NRH Seine ages
+
+```{r}
+nitAAB_GN <- nitAAB %>% 
+  filter(spawning.Year==2024, Species=="Chinook")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
