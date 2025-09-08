@@ -534,7 +534,7 @@ ggplot()+
 
 <br>
 
-The last downloaded water level was **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% pull(Water.Level.m)`m** on **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% pull(date)`** at **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% unite(col="time_stamp", time, stamp, sep=" ") %>% pull(time_stamp)`**. 
+The last downloaded water level was **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% pull(Water.Level.m)` m** on **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% pull(date)`** at **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% unite(col="time_stamp", time, stamp, sep=" ") %>% pull(time_stamp)`**. Current water temp is **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% pull(Water.temp.C)` C**, air temp is **`r nitinat.water %>% filter(date2==max(date2)) %>% filter(hour==max(hour)) %>% pull(Air.Temp.Analog.C)` C**.
 
 <br>
 
@@ -719,6 +719,12 @@ ggpubr::ggarrange(
   
   nrow=2)
 ```
+
+<br>
+
+<br>
+
+
 
 <br>
 
