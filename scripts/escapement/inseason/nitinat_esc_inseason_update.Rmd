@@ -25,16 +25,34 @@ options(scipen=9999)
 
 # ================== COUNT DATA ================== 
 # SIL data ---------------------------------
- nitinat.SIL <- readxl::read_excel(path=paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/", 
-                                               escapement_year, 
-                                               "/SILs/Area 22/Nitinat River/A22_Nitinat_River_", 
-                                               escapement_year, 
-                                               ".xlsx"),
-                                   sheet="Nitinat River raw SIL entry", guess_max=1000) %>% 
-   mutate_if(is.numeric, ~replace_na(., 0)) %>% 
-   mutate_at(c("adults # holding", "adults live / habitat seen (# Est Live)"), ~round(.,0)) %>% 
-   mutate(date = lubridate::ymd(date)) %>%
-   print()
+
+  # --- OLD READ METHOD USING EXCEL - retain code in case need to run old reports: 
+   # nitinat.SIL <- readxl::read_excel(path=
+   #                         paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/", 
+   #                                               escapement_year, 
+   #                                               "/SILs/Area 22/Nitinat River/A22_Nitinat_River_", 
+   #                                               escapement_year, 
+   #                                               ".xlsx"),
+   #                                   sheet="Nitinat River raw SIL entry", guess_max=1000) %>% 
+   #   mutate_if(is.numeric, ~replace_na(., 0)) %>% 
+   #   mutate_at(c("adults # holding", "adults live / habitat seen (# Est Live)"), ~round(.,0)) %>% 
+   #   mutate(date = lubridate::ymd(date)) %>%
+   #   print()
+
+nitinat.SIL <- readxl::read_excel(path=list.files(path=paste0(here::here("data", "escapement", "prelim-inseason", escapement_year)),
+                                                  pattern="SILAUC_Export",
+                                                  full.names=T),
+                                  sheet=1) %>% 
+  mutate(SBJ_ID = case_match(SBJ_ID,
+                             1 ~ "Sockeye",
+                             2 ~ "Coho",
+                             3 ~ "Pink",
+                             4 ~ "Chum",
+                             5 ~ "Chinook",
+                             6 ~ "Rainbow Trout",
+                             515039223 ~ "Steelhead",
+                             8 ~ "Cutthroat Trout",
+                             TRUE ~ "FLAG"))
 
 
 # ================== ENVIRO DATA ================== 
@@ -131,7 +149,7 @@ nit.rtStWk$stat_week <- factor(nit.rtStWk$stat_week,
 
 <br>
 
-# **Pre-season forecasts**
+# **`r escapement_year` Pre-season forecasts and regs**
 
 - Chinook: 21,000 (16,000 - 28,000)
 - Chum: 139,985 (136,024 - 142,583)
@@ -146,6 +164,10 @@ Chinook retention Aug 25-Sept 30, 2/day, only one >77cm.
 Chum retention Aug 25-Sept 30 and Oct 16-Dec 31, 2/day.
 
 Non-retention for SK. 
+
+No fishing u/s of Parker Creek. No fishing at bridge, hatchery, or Red Rock. 
+
+https://www.pac.dfo-mpo.gc.ca/fm-gp/rec/fresh-douce/region1-eng.html
 
 <br>
 
