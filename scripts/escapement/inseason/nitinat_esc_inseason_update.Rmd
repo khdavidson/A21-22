@@ -126,6 +126,7 @@ SJ.water <- full_join(
 
 
 # ================== HISTORICAL DATA ================== 
+
 # Run timing ---------------------------------
 nit.rtStWk <- readxl::read_excel(path=#paste0(here::here("data", "escapement"), sep="/", 
                                       #       list.files(path=here::here("data", "escapement"),
@@ -152,6 +153,18 @@ nit.rtStWk$stat_week <- factor(nit.rtStWk$stat_week,
                                         "10-1","10-2","10-3","10-4","10-5",
                                         "11-1","11-2","11-3","11-4","11-5",
                                         "12-1","12-2","12-3","12-4", ordered=T)) 
+
+
+# Escapement brood years ---------------------------------
+# Option 1. Run outside of RMarkdown iKnit f need to refresh escapement each year: 
+  #source(here::here("scripts", "functions", "pullNusedsData.R")) 
+  # saves as a2122_nuseds_escapement
+
+# Option 2. Source() above exports the file, read in the escapement data dump from the repo
+a2122_nuseds_escapement <- readxl::read_excel(path=list.files(path=here::here("outputs"),
+                                                              pattern="R_OUT - Area21-22_Escapement_allSpp-allYrs",
+                                                              full.names=T),
+                                              sheet=1)
 ```
 
 <br>
@@ -182,6 +195,41 @@ https://www.pac.dfo-mpo.gc.ca/fm-gp/rec/fresh-douce/region1-eng.html
 
 <br>
 
+## Brood year escapements
+
+The table below outlines the spawning escapement for brood year(s) that contributed to the `r escapement_year` return by species. Also important to consider are the hatchery egg/release targets and whether or not they were met. Note that in most  years "Adult Broodstock Removals" includes culls/morts/surplus/"other uses" fish as well as the actual spawned broodstock. 
+
+```{r}
+a2122_nuseds_escapement %>%
+  janitor::clean_names() %>%
+  filter(area=="22", grepl("nitinat|worthless|jasper|noname|parker", waterbody_name, ignore.case=T)) %>% 
+  group_by(waterbody_name, species, year, est_type) %>%
+  summarize(count = sum(estimate, na.rm=T)) %>%
+  mutate(brood_year_selection = case_when(species=="Chinook" & year %in% c(escapement_year-5, escapement_year-4, escapement_year-3) ~ 
+                                            "BY",
+                                          species=="Coho" & year %in% c(escapement_year-3) ~ "BY",
+                                          species=="Chum" & year %in% c(escapement_year-5, escapement_year-4, escapement_year-3) ~ 
+                                            "BY",
+                                          species=="Sockeye" & year %in% c(escapement_year-4) ~ "BY",
+                                          TRUE ~ NA)) %>%
+  filter(brood_year_selection=="BY", est_type%in%c("Natural Adult Spawners", "Adult Broodstock Removals")) %>%
+  select(-c(brood_year_selection, waterbody_name)) %>%
+  pivot_wider(names_from = est_type, values_from = count) %>%
+  arrange(species, desc(year)) %>%
+  mutate(!!paste0(escapement_year, " age class") := case_when(year==escapement_year-5 ~ 5,
+                                                           year==escapement_year-4 ~ 4,
+                                                           year==escapement_year-3 ~ 3,
+                                                           TRUE ~ NA)) %>%
+  relocate(contains("age class"), .after=year) %>%
+  kableExtra::kbl(align="c") %>%
+  kableExtra::kable_paper("hover", full_width=T, position="center") 
+```
+
+
+<br>
+
+<br>
+
 # **In-season counts**
 
 <br> 
@@ -205,7 +253,7 @@ nitinat.SIL %>%
 
 <br>
 
-```{r peak-table}
+```{r}
 #Total counts to date (excluding trout):
   
 # nitinat.SIL %>% 
@@ -219,7 +267,7 @@ nitinat.SIL %>%
 
 Peak counts (excluding trout):
 
-```{r}
+```{r peak-table}
 nitinat.SIL %>% 
   filter(!is.na(date), !is.na(SGA_LIVE_ADULTS_OBSERVED),
          SBJ_ID %in% c("Chinook", "Coho", "Chum", "Pink", "Sockeye", "Steelhead")) %>% 
@@ -323,13 +371,13 @@ ggplot() +
              pivot_longer(cols=c(Spawning, Holding), names_to="behaviour", values_to="count") %>% 
              filter(count>0), 
            aes(x=as.Date(date), y=count, fill=behaviour, colour=segment_category), 
-           stat="identity", position="stack", alpha=0.7, size=1) +
+           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
   labs(x="", y="Spawning adults", fill="Behaviour", colour="Segment") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1)) +
-  facet_wrap(~SBJ_ID)
+  facet_wrap(~SBJ_ID, scales="free_y")
 ```
 
 
