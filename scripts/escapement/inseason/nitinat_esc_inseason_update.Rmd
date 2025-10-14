@@ -309,7 +309,7 @@ ggplot() +
              filter(NAME=="NITINAT RIVER" & SBJ_ID %in% c("Chinook", "Coho", "Chum", "Pink", "Sockeye", "Steelhead")) %>%
              group_by(date, SBJ_ID, survey_type) %>% 
              summarize(total_adults=sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T)), 
-           aes(x=date, y=total_adults, group=SBJ_ID, fill=SBJ_ID), stat="identity", alpha=0.8, width=3) +
+           aes(x=date, y=total_adults, group=SBJ_ID, fill=SBJ_ID), stat="identity", alpha=0.8, width=5) +
   facet_wrap(~SBJ_ID, scales="free_y") +
   scale_x_date(limits=c(as.Date("2025-08-20"), as.Date("2025-11-15"))) +
   #scale_y_continuous(sec.axis = sec_axis(~ . /100, name = "Total dead adults (line)")) +
@@ -346,7 +346,7 @@ ggplot() +
              group_by(date, SBJ_ID) %>% 
              summarize(total_adults = sum(SGA_LIVE_ADULTS_OBSERVED,na.rm=T)), 
            aes(x=date, y=total_adults, group=SBJ_ID, fill=SBJ_ID, colour=SBJ_ID), 
-           stat="identity", alpha=0.8, width=2, size=1) +
+           stat="identity", alpha=0.8, width=4, size=1) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d", limits=c(as.Date("2025-08-20"), as.Date("2025-11-15"))) +
   scale_y_continuous(sec.axis = sec_axis(~ . /500, name = "water level (m)")) +
   labs(x="", y="Live count") +
@@ -371,7 +371,7 @@ ggplot() +
              pivot_longer(cols=c(Spawning, Holding), names_to="behaviour", values_to="count") %>% 
              filter(count>0), 
            aes(x=as.Date(date), y=count, fill=behaviour, colour=segment_category), 
-           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
+           stat="identity", position="stack", alpha=0.7, size=1, width=3) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
   labs(x="", y="Spawning adults", fill="Behaviour", colour="Segment") +
@@ -624,14 +624,14 @@ ggplot()+
                                 summarize(mean_lvl_hist=mean(Water.Level.m,na.rm=T)) %>%
                                 mutate(label = paste0(min(nitinat.water$year), sep="-", escapement_year-1)),
                               aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_lvl_hist, label=as.factor(label)),
-                              colour="gray40", linewidth=1, show.legend=F, hjust=0.9, text_smoothing=30, alpha=0.6) +
+                              colour="gray40", linewidth=1, show.legend=F, hjust=0.45, text_smoothing=30, alpha=0.6) +
   geomtextpath:: geom_labelline(data=nitinat.water %>% 
                                 filter(year==escapement_year & Water.Level.m>0.1) %>%
                                 group_by(DOY) %>% 
                                 summarize(mean_lvl=mean(Water.Level.m,na.rm=T)) %>% 
                                 mutate(label=escapement_year),
                               aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_lvl, label=as.factor(label)), 
-                              colour="dodger blue", linewidth=1.2, hjust=0.13, show.legend=F) +
+                              colour="dodger blue", linewidth=1.2, hjust=0.031, show.legend=F) +
   labs(y="Water level (m)") +
   scale_colour_manual(values=c("dodger blue", "gray70")) +
   scale_x_date(date_labels = "%b %d") +
@@ -675,7 +675,7 @@ ggpubr::ggarrange(
                                   colour="green", linewidth=1, show.legend=F, hjust=0, text_smoothing=30) +
     labs(y="Water temperature (C)") +
     scale_colour_manual(values=c("green", "gray70")) +
-    scale_x_date(date_labels = "%b %d") +
+    scale_x_date(date_labels = "%b %d", date_breaks="1 month") +
     #scale_y_continuous(breaks=seq(0,10,by=0.5)) +
     theme_bw() +
     theme(axis.text = element_text(colour="black"),
@@ -706,7 +706,7 @@ ggpubr::ggarrange(
                                   colour="green", linewidth=1, show.legend=F, hjust=0, text_smoothing=30) +
     labs(y="Air temperature (C)") +
     scale_colour_manual(values=c("green", "gray70")) +
-    scale_x_date(date_labels = "%b %d") +
+    scale_x_date(date_labels = "%b %d", date_breaks="1 month") +
     #scale_y_continuous(breaks=seq(0,10,by=0.5)) +
     theme_bw() +
     theme(axis.text = element_text(colour="black"),
@@ -752,7 +752,7 @@ ggplot()+
                                 mutate(label=escapement_year),
                               aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_lvl, label=as.factor(label)), 
                               colour="dodger blue", linewidth=1, 
-                              hjust=0.3, 
+                              hjust=0.2, 
                               show.legend=F) +
   labs(y="Water level (m)") +
   scale_colour_manual(values=c("dodger blue", "gray70")) +
@@ -789,10 +789,10 @@ ggpubr::ggarrange(
                                     summarize(mean_temp=mean(Water.temp.C,na.rm=T)) %>% 
                                     mutate(label=escapement_year),
                                   aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_temp, label=as.factor(label)), 
-                                  colour="green", linewidth=1, show.legend=F, hjust=2.2, text_smoothing=30) +
+                                  colour="green", linewidth=1, show.legend=F, hjust=0, text_smoothing=30) +
     labs(y="Water temperature (C)") +
     scale_colour_manual(values=c("green", "gray70")) +
-    scale_x_date(date_labels = "%b %d") +
+    scale_x_date(date_labels = "%b %d", date_breaks = "14 day") +
     #scale_y_continuous(breaks=seq(0,10,by=0.5)) +
     theme_bw() +
     theme(axis.text = element_text(colour="black"),
@@ -813,17 +813,17 @@ ggpubr::ggarrange(
                                    summarize(mean_temp_hist=mean(Air.Temp.Analog.C,na.rm=T)) %>%
                                    mutate(label = paste0(min(nitinat.water$year), sep="-", escapement_year-1)),
                                  aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_temp_hist, label=as.factor(label)), 
-                                 colour="gray40", linewidth=1, show.legend=F, hjust=0.91, text_smoothing=30, alpha=0.6) +
+                                 colour="gray40", linewidth=1, show.legend=F, hjust=0.9, text_smoothing=30, alpha=0.6) +
     geomtextpath:: geom_labelline(data=nitinat.water %>% 
                                     filter(month %in% c("Jun", "Jul", "Aug","Sep","Oct", "Nov") & year==escapement_year) %>%
                                     group_by(DOY) %>% 
                                     summarize(mean_temp=mean(Air.Temp.Analog.C, na.rm=T)) %>% 
                                     mutate(label=escapement_year),
                                   aes(x=as.Date(DOY, origin="2021-12-31"), y=mean_temp, label=as.factor(label)), 
-                                  colour="green", linewidth=1, show.legend=F, hjust=1000, text_smoothing=30) +
+                                  colour="green", linewidth=1, show.legend=F, hjust=0, text_smoothing=30) +
     labs(y="Air temperature (C)") +
     scale_colour_manual(values=c("green", "gray70")) +
-    scale_x_date(date_labels = "%b %d") +
+    scale_x_date(date_labels = "%b %d", date_breaks = "14 day") +
     #scale_y_continuous(breaks=seq(0,10,by=0.5)) +
     theme_bw() +
     theme(axis.text = element_text(colour="black"),
