@@ -61,7 +61,8 @@ nitinat.SIL <- readxl::read_excel(path=list.files(path=paste0(here::here("data",
          survey_type = case_when(STREAM_MTP_ID==6 & SEGMENT_NAME %in% c("35-34", "34-29", "29-23", "23-17", 
                                                                         "17-12", "12-7", "7-0", "0-Lake") ~ "Heli",
                                  STREAM_MTP_ID==3 ~ "Snorkel",
-                                 TRUE ~ "FLAG"))
+                                 TRUE ~ "FLAG")) %>%
+  filter(!grepl("san juan|gordon|harris|lens|renfrew", NAME, ignore.case=T))
 
 
 # ================== ENVIRO DATA ================== 
