@@ -309,7 +309,7 @@ ggplot() +
              filter(NAME=="NITINAT RIVER" & SBJ_ID %in% c("Chinook", "Coho", "Chum", "Pink", "Sockeye", "Steelhead")) %>%
              group_by(date, SBJ_ID, survey_type) %>% 
              summarize(total_adults=sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T)), 
-           aes(x=date, y=total_adults, group=SBJ_ID, fill=SBJ_ID), stat="identity", alpha=0.8, width=5) +
+           aes(x=date, y=total_adults, group=SBJ_ID, fill=SBJ_ID), stat="identity", alpha=0.8, width=7) +
   facet_wrap(~SBJ_ID, scales="free_y") +
   scale_x_date(limits=c(as.Date("2025-08-20"), as.Date("2025-11-15"))) +
   #scale_y_continuous(sec.axis = sec_axis(~ . /100, name = "Total dead adults (line)")) +
@@ -346,7 +346,7 @@ ggplot() +
              group_by(date, SBJ_ID) %>% 
              summarize(total_adults = sum(SGA_LIVE_ADULTS_OBSERVED,na.rm=T)), 
            aes(x=date, y=total_adults, group=SBJ_ID, fill=SBJ_ID, colour=SBJ_ID), 
-           stat="identity", alpha=0.8, width=4, size=1) +
+           stat="identity", alpha=0.8, width=5, size=1) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d", limits=c(as.Date("2025-08-20"), as.Date("2025-11-15"))) +
   scale_y_continuous(sec.axis = sec_axis(~ . /500, name = "water level (m)")) +
   labs(x="", y="Live count") +
@@ -371,7 +371,7 @@ ggplot() +
              pivot_longer(cols=c(Spawning, Holding), names_to="behaviour", values_to="count") %>% 
              filter(count>0), 
            aes(x=as.Date(date), y=count, fill=behaviour, colour=segment_category), 
-           stat="identity", position="stack", alpha=0.7, size=1, width=3) +
+           stat="identity", position="stack", alpha=0.7, linewidth=1.1, width=5) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
   labs(x="", y="Spawning adults", fill="Behaviour", colour="Segment") +
