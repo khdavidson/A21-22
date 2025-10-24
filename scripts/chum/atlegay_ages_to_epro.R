@@ -53,3 +53,46 @@ View(a22.cm.resolved %>%
        group_by(r_book_no) %>%
        summarize(resolved_age_eu=unique(resolved_age_eu), age_eu=unique(age_eu)))
 # ^ these book numbers should be the same as a22.cm.conflicts
+
+
+
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+#                                                                             Clean for EPRO
+
+
+# Summarize in a way that is helpful for populating EPRO template ---------------
+# First entries with a real age 
+a22.cm.ages <- a22.cm.resolved %>%
+  filter(!grepl("ud|ds|rg|wd|ns|rd|dm", age_eu, ignore.case=T), !is.na(resolved_age_eu)) %>%
+  group_by(r_book_no, scale_book_no, fish_no) %>%
+  summarize(resolved_age_eu = unique(resolved_age_eu)) %>%
+  print()
+
+
+# Entries with error codes
+a22.cm.noages <- a22.cm.resolved %>%
+  filter(grepl("ud|ds|rg|wd|ns|rd|dm", age_eu, ignore.case=T)) %>%
+  group_by(r_book_no, scale_book_no, fish_no) %>%
+  summarize(resolved_age_eu = unique(resolved_age_eu), age_comments = paste0(age_comments, collapse=" / ")) %>%
+  print()
+
+#**** here next day - why isn't this working??? why won't filter work 
+
+
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+#                                                                                EXPORT
+
+
+# To DFO Network drive ---------------
+writexl::write_xlsx(x=a22.cm.resolved, path=paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/SC_BioData_Management/6-Scale/Age_Results/Atlegay-InStream/R_OUT - Area22_Chum_from-Atlegay-for-EPRO_",
+                                                   Sys.Date(),
+                                                   ".xlsx"))
+
+
+# To github repo ---------------
+writexl::write_xlsx(x=a22.cm.resolved, path=paste0(here::here("outputs"), 
+                                                   "/R_OUT - Area22_Chum_from-Atlegay-for-EPRO_",
+                                                   Sys.Date(),
+                                                   ".xlsx"))
