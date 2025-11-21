@@ -359,9 +359,9 @@ geom_ribbon(data=nitinat.water %>%
   # Plot survey count data ------------
 geom_bar(data=nitinat.SIL %>% 
            filter(SBJ_ID=="Sockeye", NAME=="NITINAT RIVER") %>% 
-           group_by(START_DTT) %>% 
+           group_by(date) %>% 
            summarize(n=sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T)), 
-         aes(x=as.Date(START_DTT), y=n), 
+         aes(x=as.Date(date), y=n), 
          stat="identity", position="stack", alpha=0.7) +
   scale_y_continuous(sec.axis = sec_axis(~./50, name="Water level (m)")) +
   scale_x_date(date_breaks="7 day", date_labels="%b %d") +
@@ -437,14 +437,15 @@ Sockeye were present in Hobiton and Campus Creeks in 2023, but the primary enume
 Hobiton was swum once late May due to delays in the echosounder installation, and again in late August during drought conditions to assess whether pre-spawn mortalities were occurring in the creek. Only one pre-spawn jack was noted, the remaining dead were too deep or too decomposed to assess mortality. 
 
 ```{r}
-tribs.sil %>% 
-  filter(species=="Sockeye") %>% 
-  group_by(date, system) %>% 
-  summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`),
-            dead_adults = sum(`adults dead`),
-            jk_live = sum(`jacks live`),
-            jk_dead = sum(`jacks dead`)) %>%
-  mutate(across(c(exp_ad_live:dead_adults), ~round(., 0))) %>%
+nitinat.SIL %>% 
+  filter(SBJ_ID=="Sockeye", NAME !="NITINAT RIVER") %>% 
+  group_by(date, NAME) %>% 
+  summarize(ad_live = sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T),
+            exp_ad_livve = sum(SGA_LIVE_ADULTS_ESTIMATED, na.rm=T),
+            dead_adults = sum(SGA_DEAD_ADULTS_OBSERVED, na.rm=T),
+            jk_live = sum(SGA_LIVE_JACKS_ESTIMATED, na.rm=T),
+            jk_dead = sum(SGA_DEAD_JACKS_ESTIMATED, na.rm=T)) %>%
+  mutate(across(c(ad_live:jk_dead), ~round(., 0))) %>%
   kableExtra::kbl(align="c") %>%
   kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
   kableExtra::collapse_rows(columns=c(1), valign="middle", target=1) 
@@ -576,19 +577,23 @@ Run timing information is not available for Nitinat Sockeye.
 
 ```{r}
 ggplot()  +
-  geom_bar(data=nit.escHistorical %>% 
-             filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="SEL"), 
-           aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
-  geom_bar(data=nit.escHistorical %>% 
-             filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="SEL"), 
-           aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
-  geom_bar(data=escEstSpp %>% 
-             filter(ShortSpecies=="SK", AREA!="20", grepl("Nitinat", SystemName)) %>% 
-             select(Year, SystemName, AdultNaturalReco) %>% 
-             summarize(n=sum(AdultNaturalReco)), 
-           aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   
-  scale_x_continuous(breaks=seq(min(nit.escHistorical$`Analysis Year`), analysis_year, by=2)) +
-  labs(x="Return Year", y="Sockeye spawners") +
+  geom_bar(data=a2122_nuseds_escapement %>% 
+             filter(waterbody_name=="NITINAT RIVER", `Species Qualified`=="SEL", 
+                    est_type%in%c("Unspecified Return", "Natural Adult Spawners")) %>%
+             group_by(year, est_type) %>%
+             summarize(count = sum(estimate, na.rm=T)), 
+           aes(x=year, y=count, colour=est_type, fill=est_type), stat="identity", alpha=0.8) +
+  # geom_bar(data=escEstSpp %>% 
+  #            filter(ShortSpecies=="SK", AREA!="20", grepl("Nitinat", SystemName)) %>% 
+  #            select(Year, SystemName, AdultNaturalReco) %>% 
+  #            summarize(n=sum(AdultNaturalReco)), 
+  #          aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   
+  scale_fill_manual(values=c("Unspecified Return" = "gray80",
+                             "Natural Adult Spawners" = "dodger blue")) +
+  scale_colour_manual(values=c("Unspecified Return" = "gray80",
+                               "Natural Adult Spawners" = "dodger blue")) +
+  scale_x_continuous(breaks=seq(min(a2122_nuseds_escapement$year), analysis_year, by=2)) +
+  labs(x="Return Year", y="Sockeye spawners", fill="Estimate type", colour="Estimate type") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
@@ -828,12 +833,15 @@ The overall mark rate of **ADULT coho** caught in Nitinat Lake purse seine this 
 Live Coho were present in Campus, NoName and Worthless Creeks in 2023.
 
 ```{r}
-tribs.sil %>% 
-  filter(species=="Coho") %>% 
-  group_by(trib_status, system) %>% 
-  summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`),
-            dead_adults = sum(`adults dead`)) %>%
-  mutate(across(c(exp_ad_live:dead_adults), ~round(., 0))) %>%
+nitinat.SIL %>% 
+  filter(SBJ_ID=="Coho", NAME !="NITINAT RIVER") %>% 
+  group_by(date, NAME) %>% 
+  summarize(ad_live = sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T),
+            exp_ad_livve = sum(SGA_LIVE_ADULTS_ESTIMATED, na.rm=T),
+            dead_adults = sum(SGA_DEAD_ADULTS_OBSERVED, na.rm=T),
+            jk_live = sum(SGA_LIVE_JACKS_ESTIMATED, na.rm=T),
+            jk_dead = sum(SGA_DEAD_JACKS_ESTIMATED, na.rm=T)) %>%
+  mutate(across(c(ad_live:jk_dead), ~round(., 0))) %>%
   kableExtra::kbl(align="c") %>%
   kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
   kableExtra::collapse_rows(columns=c(1), valign="middle", target=1) 
@@ -979,16 +987,23 @@ Figure: Raw swim counts (blue) from this year compared to historical raw swim co
 
 ```{r}
 ggplot()  +
-  geom_bar(data=nit.escHistorical %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CO"), 
-           aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
-  geom_bar(data=nit.escHistorical %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CO"), 
-           aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
-  geom_bar(data=escEstSpp %>% 
-             filter(ShortSpecies=="CO", AREA!="20", grepl("Nitinat", SystemName)) %>% 
-             select(Year, SystemName, AdultNaturalReco) %>% 
-             summarize(n=sum(AdultNaturalReco)), 
-           aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +    scale_x_continuous(breaks=seq(min(nit.escHistorical$`Analysis Year`), analysis_year, by=2)) +
-  labs(x="Return Year", y="Coho spawners") +
+  geom_bar(data=a2122_nuseds_escapement %>% 
+             filter(waterbody_name=="NITINAT RIVER", `Species Qualified`=="CO", 
+                    est_type%in%c("Unspecified Return", "Natural Adult Spawners")) %>%
+             group_by(year, est_type) %>%
+             summarize(count = sum(estimate, na.rm=T)), 
+           aes(x=year, y=count, colour=est_type, fill=est_type), stat="identity", alpha=0.8) +
+  # geom_bar(data=escEstSpp %>% 
+  #            filter(ShortSpecies=="CO", AREA!="20", grepl("Nitinat", SystemName)) %>% 
+  #            select(Year, SystemName, AdultNaturalReco) %>% 
+  #            summarize(n=sum(AdultNaturalReco)), 
+  #          aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   
+  scale_fill_manual(values=c("Unspecified Return" = "gray80",
+                             "Natural Adult Spawners" = "dodger blue")) +
+  scale_colour_manual(values=c("Unspecified Return" = "gray80",
+                               "Natural Adult Spawners" = "dodger blue")) +
+  scale_x_continuous(breaks=seq(min(a2122_nuseds_escapement$year), analysis_year, by=2)) +
+  labs(x="Return Year", y="Coho spawners", fill="Estimate type", colour="Estimate type") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
@@ -1176,12 +1191,15 @@ Figure: Expanded Chum counts (large bars) and swim-ins (narrow black bars). Adul
 Live chum were present in Campus and Hobiton Creek in 2023, and dead chum were noted in NoName Creek. Opportunistic surveys of Caycuse and Doobah found no chum. 
 
 ```{r}
-tribs.sil %>% 
-  filter(species=="Chum") %>% 
-  group_by(system) %>% 
-  summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`),
-            dead_adults = sum(`adults dead`)) %>%
-  mutate(across(c(exp_ad_live:dead_adults), ~round(., 0))) %>%
+nitinat.SIL %>% 
+  filter(SBJ_ID=="Chum", NAME !="NITINAT RIVER") %>% 
+  group_by(date, NAME) %>% 
+  summarize(ad_live = sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T),
+            exp_ad_livve = sum(SGA_LIVE_ADULTS_ESTIMATED, na.rm=T),
+            dead_adults = sum(SGA_DEAD_ADULTS_OBSERVED, na.rm=T),
+            jk_live = sum(SGA_LIVE_JACKS_ESTIMATED, na.rm=T),
+            jk_dead = sum(SGA_DEAD_JACKS_ESTIMATED, na.rm=T)) %>%
+  mutate(across(c(ad_live:jk_dead), ~round(., 0))) %>%
   kableExtra::kbl(align="c") %>%
   kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
   kableExtra::collapse_rows(columns=c(1), valign="middle", target=1) 
@@ -1351,16 +1369,23 @@ Figure: Raw swim counts (blue) from this year compared to historical raw swim co
 
 ```{r}
 ggplot()  +
-  geom_bar(data=nit.escHistorical %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CM"), 
-           aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
-  geom_bar(data=nit.escHistorical %>% filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CM"), 
-           aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
-  geom_bar(data=escEstSpp %>% 
-             filter(ShortSpecies=="CM", AREA!="20", grepl("Nitinat", SystemName)) %>% 
-             select(Year, SystemName, AdultNaturalReco) %>% 
-             summarize(n=sum(AdultNaturalReco)), 
-           aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   scale_x_continuous(breaks=seq(min(nit.escHistorical$`Analysis Year`), analysis_year, by=2)) +
-  labs(x="Return Year", y="Chum spawners") +
+  geom_bar(data=a2122_nuseds_escapement %>% 
+             filter(waterbody_name=="NITINAT RIVER", `Species Qualified`=="CM", 
+                    est_type%in%c("Unspecified Return", "Natural Adult Spawners")) %>%
+             group_by(year, est_type) %>%
+             summarize(count = sum(estimate, na.rm=T)), 
+           aes(x=year, y=count, colour=est_type, fill=est_type), stat="identity", alpha=0.8) +
+  # geom_bar(data=escEstSpp %>% 
+  #            filter(ShortSpecies=="CM", AREA!="20", grepl("Nitinat", SystemName)) %>% 
+  #            select(Year, SystemName, AdultNaturalReco) %>% 
+  #            summarize(n=sum(AdultNaturalReco)), 
+  #          aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   
+  scale_fill_manual(values=c("Unspecified Return" = "gray80",
+                             "Natural Adult Spawners" = "dodger blue")) +
+  scale_colour_manual(values=c("Unspecified Return" = "gray80",
+                               "Natural Adult Spawners" = "dodger blue")) +
+  scale_x_continuous(breaks=seq(min(a2122_nuseds_escapement$year), analysis_year, by=2)) +
+  labs(x="Return Year", y="Chum spawners", fill="Estimate type", colour="Estimate type") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
@@ -1550,12 +1575,15 @@ Total number of swim-ins this year is: `r nrh.cn %>% filter(ParentActivityType==
 ## Tributaries (River and Lake)
 
 ```{r}
-tribs.sil %>% 
-  filter(species=="Chinook") %>% 
-  group_by(system) %>% 
-  summarize(exp_ad_live = sum(`adults live / habitat seen (# Est Live)`),
-            dead_adults = sum(`adults dead`)) %>%
-  mutate(across(c(exp_ad_live:dead_adults), ~round(., 0))) %>%
+nitinat.SIL %>% 
+  filter(SBJ_ID=="Chinook", NAME !="NITINAT RIVER") %>% 
+  group_by(date, NAME) %>% 
+  summarize(ad_live = sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T),
+            exp_ad_livve = sum(SGA_LIVE_ADULTS_ESTIMATED, na.rm=T),
+            dead_adults = sum(SGA_DEAD_ADULTS_OBSERVED, na.rm=T),
+            jk_live = sum(SGA_LIVE_JACKS_ESTIMATED, na.rm=T),
+            jk_dead = sum(SGA_DEAD_JACKS_ESTIMATED, na.rm=T)) %>%
+  mutate(across(c(ad_live:jk_dead), ~round(., 0))) %>%
   kableExtra::kbl(align="c") %>%
   kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
   kableExtra::collapse_rows(columns=c(1), valign="middle", target=1) 
@@ -1732,22 +1760,24 @@ Figure: Raw swim counts (blue) from this year compared to historical raw swim co
 
 ```{r}
 ggplot()  +
-  geom_hline(data=nit.esc.goal %>% 
-               filter(RP=="SMSY"), 
-             aes(yintercept=Value)) +
-  geom_bar(data=nit.escHistorical %>% 
-             filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CK"), 
-           aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
-  geom_bar(data=nit.escHistorical %>% 
-             filter(`Waterbody Name`=="NITINAT RIVER", `Species Qualified`=="CK"), 
-           aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
-  geom_bar(data=escEstSpp %>% 
-             filter(ShortSpecies=="CN", AREA!="20", grepl("Nitinat", SystemName)) %>% 
-             select(Year, SystemName, AdultNaturalReco) %>% 
-             summarize(n=sum(AdultNaturalReco)), 
-           aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +  scale_x_continuous(breaks=seq(min(nit.escHistorical$`Analysis Year`), analysis_year, by=2)) +
-  labs(x="Return year", y="Chinook spawners") +
-  theme_bw()+
+  geom_bar(data=a2122_nuseds_escapement %>% 
+             filter(waterbody_name=="NITINAT RIVER", `Species Qualified`=="CK", 
+                    est_type%in%c("Unspecified Return", "Natural Adult Spawners")) %>%
+             group_by(year, est_type) %>%
+             summarize(count = sum(estimate, na.rm=T)), 
+           aes(x=year, y=count, colour=est_type, fill=est_type), stat="identity", alpha=0.8) +
+  # geom_bar(data=escEstSpp %>% 
+  #            filter(ShortSpecies=="CK", AREA!="20", grepl("Nitinat", SystemName)) %>% 
+  #            select(Year, SystemName, AdultNaturalReco) %>% 
+  #            summarize(n=sum(AdultNaturalReco)), 
+  #          aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   
+  scale_fill_manual(values=c("Unspecified Return" = "gray80",
+                             "Natural Adult Spawners" = "dodger blue")) +
+  scale_colour_manual(values=c("Unspecified Return" = "gray80",
+                               "Natural Adult Spawners" = "dodger blue")) +
+  scale_x_continuous(breaks=seq(min(a2122_nuseds_escapement$year), analysis_year, by=2)) +
+  labs(x="Return Year", y="Chinook spawners", fill="Estimate type", colour="Estimate type") +
+  theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
 
@@ -1839,20 +1869,23 @@ No pinks observed in 2024.
 
 ```{r}
 ggplot()  +
-  geom_bar(data=nit.escHistorical %>% 
-             filter(`Waterbody Name` %in% c("NITINAT RIVER", "WORTHLESS CREEK", "NONAME CREEK", "JASPER CREEK", 
-                                            "LITTLE NITINAT RIVER", "PARKER CREEK"), `Species Qualified`=="PKE"), 
-           aes(x=`Analysis Year`, y=`Natural Adult Spawners`), stat="identity", colour="dodger blue", fill="dodger blue", alpha=0.8) +
-  geom_bar(data=nit.escHistorical %>%  
-             filter(`Waterbody Name` %in% c("NITINAT RIVER", "WORTHLESS CREEK", "NONAME CREEK", "JASPER CREEK", 
-                                            "LITTLE NITINAT RIVER", "PARKER CREEK"), `Species Qualified`=="PKE"), 
-           aes(x=`Analysis Year`, y=`Unspecified Return`), stat="identity", colour="gray80", fill="gray80", alpha=0.8) +  
-  geom_bar(data=escEstSpp %>% 
-             filter(ShortSpecies=="PK", AREA!="20", grepl("Nitinat", SystemName)) %>% 
-             select(Year, SystemName, AdultNaturalReco) %>% 
-             summarize(n=sum(AdultNaturalReco)), 
-           aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   scale_x_continuous(breaks=seq(min(nit.escHistorical$`Analysis Year`), analysis_year, by=2)) +
-  labs(x="Return Year", y="Pink spawners") +
+  geom_bar(data=a2122_nuseds_escapement %>% 
+             filter(waterbody_name=="NITINAT RIVER", `Species Qualified`=="PKE", 
+                    est_type%in%c("Unspecified Return", "Natural Adult Spawners")) %>%
+             group_by(year, est_type) %>%
+             summarize(count = sum(estimate, na.rm=T)), 
+           aes(x=year, y=count, colour=est_type, fill=est_type), stat="identity", alpha=0.8) +
+  # geom_bar(data=escEstSpp %>% 
+  #            filter(ShortSpecies=="PK", AREA!="20", grepl("Nitinat", SystemName)) %>% 
+  #            select(Year, SystemName, AdultNaturalReco) %>% 
+  #            summarize(n=sum(AdultNaturalReco)), 
+  #          aes(x=analysis_year, y=n), stat="identity", colour="red", fill="dodger blue", alpha=0.4) +   
+  scale_fill_manual(values=c("Unspecified Return" = "gray80",
+                             "Natural Adult Spawners" = "dodger blue")) +
+  scale_colour_manual(values=c("Unspecified Return" = "gray80",
+                               "Natural Adult Spawners" = "dodger blue")) +
+  scale_x_continuous(breaks=seq(min(a2122_nuseds_escapement$year), analysis_year, by=2)) +
+  labs(x="Return Year", y="Sockeye spawners", fill="Estimate type", colour="Estimate type") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
