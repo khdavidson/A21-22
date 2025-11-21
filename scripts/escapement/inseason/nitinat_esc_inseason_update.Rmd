@@ -157,7 +157,7 @@ nit.rtStWk$stat_week <- factor(nit.rtStWk$stat_week,
 
 
 # Escapement brood years ---------------------------------
-# Option 1. Run outside of RMarkdown iKnit f need to refresh escapement each year: 
+# Option 1. Run outside of RMarkdown if need to refresh escapement each year: 
   #source(here::here("scripts", "functions", "pullNusedsData.R")) 
   # saves as a2122_nuseds_escapement
 
@@ -727,7 +727,7 @@ ggpubr::ggarrange(
 
 ## Summer water conditions
 
-Graphs focusing on the lead up to and including peak salmon periods 
+Graphs focusing on the lead up to and including peak salmon periods. Notable events included two lake turnover events this year, one on Sept 17 and the other Oct 14. On Sept 17 the hatchery lost all Chinook brood held in lake pens (~2800). The second turnover may have just been partial but rotten egg smell was noted especially at top end of lake.
 
 ```{r fig.cap='Nitinat hydromet water level (m) for summer and fall. Historical shaded area represents daily maximum and minimum recorded values over the time series, while the line represents the mean water level. Current year line represents daily mean water level (blue). Water level is recorded hourly at the Nitinat River Hatchery pumphouse.', fig.width=8, fig.height=6}
 
