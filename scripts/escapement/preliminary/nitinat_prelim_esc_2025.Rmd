@@ -65,12 +65,37 @@ nitinat.SIL <- readxl::read_excel(path=list.files(path=paste0(here::here("data",
 # ============================= SIL+AUC DATABASE data ============================
 
 # AUC Data Analysis Table ---------------------
-#   This table should fill in as SILs are entered...
-AUCdataTable <- readxl::read_excel(path=paste0(here::here("data", "escapement", "prelim-inseason", 
-                                                          analysis_year,
-                                                          "AUC_DataAnalysisTable_area21-22_"),
-                                               analysis_year,
-                                               ".xlsx"))
+#   This table only fills in after you go through the Escapement Estimates > AUC Calculator and update your % pop/OE 
+#   expansions
+# AUCdataTable <- readxl::read_excel(path=paste0(here::here("data", "escapement", "prelim-inseason", 
+#                                                           analysis_year,
+#                                                           "AUC_DataAnalysisTable_area21-22_"),
+#                                                analysis_year,
+#                                                ".xlsx"))
+escEstAUCsource <- readxl::read_excel(path=paste0(here::here("data", "escapement", "prelim-inseason", 
+                                                           analysis_year,
+                                                           "EscEstAUCSource_area21-22_"),
+                                                analysis_year,
+                                                ".xlsx")) %>% 
+  left_join(.,
+            readxl::read_excel(path=here::here("data", "escapement", "prelim-inseason", "WaterbodiesValues.xlsx")) %>% 
+              mutate(AREA = case_when(NAME=="TUCK LAKE" ~ "22",
+                                      TRUE ~ AREA)) %>%
+              select(AREA, NAME, WATERSHED_CDE) %>% 
+              rename(WatershedCode = WATERSHED_CDE) %>% 
+              filter(!is.na(WatershedCode)) %>% 
+              group_by(AREA, NAME, WatershedCode) %>% 
+              filter(AREA %in% c(20,21,22)) %>% 
+              group_by(WatershedCode) %>% 
+              mutate(n=n(),
+                     system = case_when(n>1 ~ paste0("system", seq(1,length(n),by=1)),
+                                        n==1 ~ "system1")) %>% 
+              group_by(WatershedCode) %>% 
+              pivot_wider(names_from=system, values_from=NAME) %>% 
+              select(-n) %>% 
+              unite("SystemName", system1:system3, sep=", ", remove=T, na.rm=T) %>% 
+              mutate(SystemName = str_to_title(SystemName)),
+            na_matches="never", relationship="many-to-one")  
 
 
 # EscEstSppHeader table ---------------------
@@ -125,7 +150,7 @@ escEstAUC <- readxl::read_excel(path=paste0(here::here("data", "escapement", "pr
               mutate(SystemName = str_to_title(SystemName)),
             na_matches="never", relationship="many-to-one") %>% 
   #<<<< UPDATE HELI DATE EACH YEAR! >>>>>
-  mutate(method = case_when(DateRange== "2024/10/11 - 2024/10/23" ~ "heli",
+  mutate(method = case_when(DateRange== "2025/10/16 - 2025/10/21" ~ "heli",
                             TRUE ~ "snorkel"))
 
 
@@ -322,9 +347,9 @@ Counts are expanded for both % population surveyed and/or observer efficiency, d
 
 ```{r}
 ggplot() +
-  geom_bar(data=AUCdataTable %>% 
+  geom_bar(data=escEstAUCsource %>% 
              filter(ShortSpecies=="SK") %>% 
-             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
+             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpTotalJacks), names_to="est_type", values_to="n") %>% 
              filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
            aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position=position_dodge(width=5),
            alpha=0.5, width=5) +
@@ -334,7 +359,7 @@ ggplot() +
   theme(axis.text.x = element_text(angle=45, hjust=1),
         legend.position = "bottom",
         legend.title = element_blank()) +
-  facet_wrap(~Section_AreaInspected, scales="free")
+  facet_wrap(~SystemName, scales="free")
 ```
 
 Figure: Observed live Adult sockeye (blue) and the same counts expanded for % population and/or OE (pink). 
@@ -650,23 +675,19 @@ Counts are expanded for both % population surveyed and/or observer efficiency, d
 
 ```{r}
 ggplot() +
-  geom_bar(data=AUCdataTable %>% 
+  geom_bar(data=escEstAUCsource %>% 
              filter(ShortSpecies=="CO") %>% 
-             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
-             filter(est_type %in% c("LiveAdults", "ExpLiveAdults")) %>%
-             mutate(n = case_when(is.na(n) ~ 0,
-                                  TRUE ~ n)), 
-           aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position=position_dodge(width=5), 
+             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpTotalJacks), names_to="est_type", values_to="n") %>% 
+             filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
+           aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position=position_dodge(width=5),
            alpha=0.5, width=5) +
   labs(x="", y="Adult Coho counts") +
-  scale_x_date(date_breaks="7 day", date_labels = "%b %d", limits = c(as.Date(paste0(analysis_year, "-08-15")), 
-                                                                      as.Date(paste0(analysis_year, "-12-15")))) +
-  expand_limits(y=0) +
+  scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1),
         legend.position = "bottom",
         legend.title = element_blank()) +
-  facet_wrap(~Section_AreaInspected, scales="free")
+  facet_wrap(~SystemName, scales="free")
 ```
 s
 Figure: Observed Adult Coho (blue) and the same counts expanded for % population and/or OE (pink). 
@@ -1059,19 +1080,19 @@ Counts are expanded for both % population surveyed and/or observer efficiency, d
 
 ```{r}
 ggplot() +
-  geom_bar(data=AUCdataTable %>% 
+  geom_bar(data=escEstAUCsource %>% 
              filter(ShortSpecies=="CM") %>% 
-             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
+             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpTotalJacks), names_to="est_type", values_to="n") %>% 
              filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
            aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position=position_dodge(width=5),
            alpha=0.5, width=5) +
-  labs(x="", y="Adult Coho counts") +
+  labs(x="", y="Adult Chum counts") +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1),
         legend.position = "bottom",
         legend.title = element_blank()) +
-  facet_wrap(~Section_AreaInspected, scales="free")
+  facet_wrap(~SystemName, scales="free")
 ```
 
 Figure: Observed Adult Chum (blue) and the same counts expanded for % population and/or OE (pink).
@@ -1445,19 +1466,19 @@ Counts are expanded for both % population surveyed and/or observer efficiency, d
 
 ```{r}
 ggplot() +
-  geom_bar(data=AUCdataTable %>% 
+  geom_bar(data=escEstAUCsource %>% 
              filter(ShortSpecies=="CN") %>% 
-             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
+             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpTotalJacks), names_to="est_type", values_to="n") %>% 
              filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
            aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position=position_dodge(width=5),
            alpha=0.5, width=5) +
-  labs(x="", y="Adult Coho counts") +
+  labs(x="", y="Adult Chinook counts") +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1),
         legend.position = "bottom",
         legend.title = element_blank()) +
-  facet_wrap(~Section_AreaInspected, scales="free")
+  facet_wrap(~SystemName, scales="free")
 ```
 
 Figure: Observed Adult Chinook (blue) and the same counts expanded for % population and/or OE (pink). 
@@ -1826,19 +1847,19 @@ Counts are expanded for both % population surveyed and/or observer efficiency, d
 
 ```{r}
 ggplot() +
-  geom_bar(data=AUCdataTable %>% 
+  geom_bar(data=escEstAUCsource %>% 
              filter(ShortSpecies=="PK") %>% 
-             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpDeadJacks), names_to="est_type", values_to="n") %>% 
+             pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpTotalJacks), names_to="est_type", values_to="n") %>% 
              filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
-           aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position=position_dodge(width=5), 
+           aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position=position_dodge(width=5),
            alpha=0.5, width=5) +
-  labs(x="", y="Adult Coho counts") +
+  labs(x="", y="Adult Pink counts") +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1),
         legend.position = "bottom",
         legend.title = element_blank()) +
-  facet_wrap(~Section_AreaInspected, scales="free")
+  facet_wrap(~SystemName, scales="free")
 ```
 
 Figure: Live Adult Chinook raw counts (blue) and counts expanded for % population and/or OE (pink). 
