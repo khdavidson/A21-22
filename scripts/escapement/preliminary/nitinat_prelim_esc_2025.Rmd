@@ -1,5 +1,5 @@
 ---
-title: "Nitinat escapement 2024 (PRELIM)"
+title: "Nitinat escapement 2025 (PRELIM)"
 author: "South Coast StA"
 date: "Last update: `r Sys.Date()`"
 output: 
@@ -61,6 +61,21 @@ nitinat.SIL <- readxl::read_excel(path=list.files(path=paste0(here::here("data",
                                  TRUE ~ "FLAG")) %>%
   filter(!grepl("san juan|gordon|harris|lens|renfrew|jordan", NAME, ignore.case=T))
 
+nitinat.SIL$SEGMENT_NAME <- factor(nitinat.SIL$SEGMENT_NAME, levels=c("35-34", "34-33", 
+                                                                      "34-29", 
+                                                                      "33-32", "32-31", "31-30", "30-29", "29-28",
+                                                                      "29-23",
+                                                                      "28-27", "27-26", "26-25", "25-24", "24-23", "23-22", 
+                                                                      "23-17",
+                                                                      "22-21", "21-20", "20-19", "19-18", "18-17", "17-16", 
+                                                                      "17-12", 
+                                                                      "16-15", "15-14", "14-13", "13-12", "12-11", 
+                                                                      "12-7", 
+                                                                      "11-10", "10-9", "9-8", "8-7", "7-6",
+                                                                      "7-0", 
+                                                                      "6-5", "5-4", "4-3", "3-2", "2-1", "1-0",
+                                                                      "0-Lake", ordered=T))
+
 
 
 # ============================= SIL+AUC DATABASE data ============================
@@ -87,7 +102,7 @@ escEstAUCsource <- readxl::read_excel(path=paste0(here::here("data", "escapement
               rename(WatershedCode = WATERSHED_CDE) %>% 
               filter(!is.na(WatershedCode)) %>% 
               group_by(AREA, NAME, WatershedCode) %>% 
-              filter(AREA %in% c(20,21,22)) %>% 
+              filter(AREA %in% c(20, 21, 22)) %>% 
               group_by(WatershedCode) %>% 
               mutate(n=n(),
                      system = case_when(n>1 ~ paste0("system", seq(1,length(n),by=1)),
@@ -167,41 +182,50 @@ escEstAUC <- readxl::read_excel(path=paste0(here::here("data", "escapement", "pr
               unite("SystemName", system1:system3, sep=", ", remove=T, na.rm=T) %>% 
               mutate(SystemName = str_to_title(SystemName)),
             na_matches="never", relationship="many-to-one") %>% 
-  mutate(method = case_when(DateRange== "2025/10/16 - 2025/10/21" ~ "heli",     # **** UPDATE HELI DATE EACH YEAR! ****
-                            TRUE ~ "snorkel"))
+  # **** UPDATE HELI DATE EACH YEAR! MAY BE SPECIES SPECIFIC: ****
+  mutate(method = case_when(ShortSpecies=="CM" & DateRange== "2025/10/16 - 2025/10/21" ~ "heli", 
+                            TRUE ~ "snorkel"),
+         across(c(RawAdultFishDays:ExpJackFishDays), ~replace_na(., 0)))
 
 
 
 # ============================= EPRPO HATCHERY ============================
 
 # CHINOOK swim-ins ----------------------------
-nrh.cn <- list.files(paste0(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
-                            analysis_year,
-                            "/SILs/Area 21-22/"),
-                     pattern = "^Adult_Management - Nitinat CN", full.names = T) %>% 
-  map(~readxl::read_excel(path=.x, trim_ws=T, guess_max=20000, sheet="Adult Management", skip=1), id="path") %>% 
-  list_rbind() %>% 
-  select_all(~gsub("\\s+|\\.", "", .))  
+nrh.cn <- readxl::read_excel(path=list.files(path=paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
+                                                         analysis_year,
+                                                         "/SILs/Area 22/"),
+                                             pattern="^Adult_Management - Nitinat CN",
+                                             full.names = T),
+                             skip=1) %>%
+  janitor::clean_names()
 
 
 # CHUM swim-ins ----------------------------
-nrh.cm <- list.files(paste0(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
-                            analysis_year,
-                            "/SILs/Area 21-22/"),
-                     pattern = "^Adult_Management - Nitinat CM", full.names = T) %>%
-  map(~readxl::read_excel(path=.x, trim_ws=T, guess_max=20000, sheet="Adult Management", skip=1), id="path") %>%
-  list_rbind() %>%
-  select_all(~gsub("\\s+|\\.", "", .))  
+nrh.cm <- readxl::read_excel(path=list.files(path=paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
+                                                         analysis_year,
+                                                         "/SILs/Area 22/"),
+                                             pattern="^Adult_Management - Nitinat CM",
+                                             full.names = T),
+                             skip=1) %>%
+  janitor::clean_names()
+  # list.files(paste0(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
+  #                           analysis_year,
+  #                           "/SILs/Area 21-22/"),
+  #                    pattern = "^Adult_Management - Nitinat CM", full.names = T) %>%
+  # map(~readxl::read_excel(path=.x, trim_ws=T, guess_max=20000, sheet="Adult Management", skip=1), id="path") %>%
+  # list_rbind() %>%
+  # select_all(~gsub("\\s+|\\.", "", .))  
 
 
 # COHO swim-ins ----------------------------
-nrh.co <- list.files(paste0(path="//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
-                             analysis_year,
-                             "/SILs/Area 21-22/"),
-                      pattern = "^Adult_Management - Nitinat CO", full.names = T) %>%
-  map(~readxl::read_excel(path=.x, trim_ws=T, guess_max=20000, sheet="Adult Management", skip=1), id="path") %>%
-  list_rbind() %>%
-  select_all(~gsub("\\s+|\\.", "", .)) 
+nrh.co <- readxl::read_excel(path=list.files(path=paste0("//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/ESCAPEMENT/Data/",
+                                                         analysis_year,
+                                                         "/SILs/Area 22/"),
+                                             pattern="^Adult_Management - Nitinat CO",
+                                             full.names = T),
+                             skip=1) %>%
+  janitor::clean_names()
 
 
 
@@ -460,13 +484,38 @@ ggplot() +
            position = "stack", alpha=0.8, width=7, linewidth = 1) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
-  labs(x="", y="Spawning adult Sockeye", fill="Behaviour", colour="Segment") +
+  labs(x="", y="Observed adult Sockeye", fill="Behaviour", colour="Segment") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
 <br>
 
 Figure: Top: Expanded live Sockeye (bars) and carcasses (black line) in the Nitinat mainstem. Bottom: Spawning (gray bars) and holding (white bars) adult Sockeye and carcasses (black line). 
+
+<br>
+
+```{r}
+ggplot() +
+  geom_hline(aes(yintercept="18-17")) +
+  geom_hline(aes(yintercept="13-12"), linetype = "dashed") +
+  geom_tile(data = nitinat.SIL %>% 
+              filter(SBJ_ID=="Sockeye", NAME=="NITINAT RIVER") %>%
+              group_by(START_DTT, SEGMENT_NAME) %>% 
+              summarize(total = sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T),
+                        perc_spawn = sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T) / total),
+            aes(x=as.Date(START_DTT), y=SEGMENT_NAME, fill=perc_spawn)) +
+  scale_x_date(date_labels = "%b %d") +
+  scale_y_discrete(limits=rev) +
+  scale_fill_viridis_c(na.value = "gray90") +
+  labs(y="River segment", fill="Percent spawning") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, hjust=1),
+        axis.title.x = element_blank(),
+        axis.title = element_text(face="bold"),
+        legend.title = element_text(face="bold"))
+```
+
+Figure:  Sockeye spawning behaviour by reach break over each survey (snorkel and heli, if done). Solid black line denotes the differentiation between upper and lower Nitinat; dashed black line indicates where the hatchery is located along the river. Note heli and snorkel reach breaks are not the same. If any reach break is blank, it implies the surveyors missed the marker, and both reach counts were included in the one before. Counts with no Sockeye and/or no spawning Sockeye are indicated as gray (division by zero). 
 
 <br>
 
@@ -504,21 +553,24 @@ nitinat.SIL %>%
 
 ```{r}
 ggplot() +
-  geom_bar(data=nit.sil %>% 
-             filter(species=="Sockeye") %>% 
-             group_by(surveyNum, date, system) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
-           aes(x=as.Date(date), y=count, fill=behaviour, colour=system), 
-           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
-  geom_bar(data = tribs.sil %>% 
-             filter(species=="Sockeye", trib_status=="Nitinat trib") %>% 
-             group_by(system, date) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
-           aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
+  geom_bar(data=nitinat.SIL %>% 
+             filter(SBJ_ID=="Sockeye", grepl("NITINAT|PARKER|WORTHLESS|JASPER|NONAME", NAME, ignore.case=T)) %>% 
+             # mutate(trib_status = case_when(grepl("LITTLE NITINAT|PARKER|WORTHLESS|JASPER|NONAME", NAME, 
+             #                                      ignore.case=T) ~ "Tributary",
+             #                                TRUE ~ "Mainstem")) %>%
+             group_by(NAME, START_DTT) %>% 
+             summarize(Spawning=sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T),
+                       Holding = sum(SGA_LIVE_ADULTS_HOLDING, na.rm=T)) %>% 
+             pivot_longer(cols=c(Spawning, Holding), names_to="behaviour", values_to="count"), 
+           aes(x=as.Date(START_DTT), y=count, fill=behaviour, colour=NAME), 
+           stat="identity", position=position_dodge(width=4), alpha=0.7, size=1, width=4, linewidth = 1) +
+  # geom_bar(data = tribs.sil %>% 
+  #            filter(species=="Chinook") %>% 
+  #            group_by(system, date) %>% 
+  #            summarize(Spawning=sum(`adults # spawning`),
+  #                      Holding = sum(`adults # holding`)) %>% 
+  #            pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
+  #          aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
   scale_y_continuous(sec.axis = sec_axis(~./1, name="Trib count")) +
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
   labs(x="", y="mainstem count") +
@@ -576,32 +628,19 @@ Figure: AUC curve for Nitinat mainstem Sockeye. Note in 2024 this had already ex
 
 <br>
 
-Table: Raw swim data (raw and expanded live and dead) for Sockeye.  
-
-```{r}
-AUCdataTable %>% 
-  filter(ShortSpecies=="SK") %>% 
-  select(ShortSpecies,Section_AreaInspected, SDate, WaterTemperature, WaterClarity, LiveAdults, DeadAdults,LiveJacks,DeadJacks, ExpLiveAdults,
-         ExpDeadAdults, ExpLiveJacks, ExpDeadJacks, OverallReliability, EstPctSeen) %>% 
-  mutate(across(c(LiveAdults:ExpDeadJacks), ~round(., 0))) %>% 
-  kableExtra::kbl(align="c") %>%
-  kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
-  kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
-```
-
-<br>
-
 Table: Escapement estimates for each system. 
 
 ```{r}
 escEstSpp %>% 
   filter(ShortSpecies=="SK", AREA!="20") %>% 
-  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, contains("Raw"), contains("FishDays"))) %>% 
+  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, #n, 
+            contains("Raw"), contains("FishDays"))) %>% 
   relocate(c(SystemName, AREA), .before=ShortSpecies) %>% 
   rename(FinalAdultEstimate = AdultNaturalReco,
          FinalJackEstimate = JackNaturalReco) %>% 
   mutate(across(FinalJackEstimate:FinalAdultEstimate, ~case_when(.<0 ~ 0,
                                                                  TRUE ~ .))) %>%
+  select(-c(Notes)) %>%
   kableExtra::kbl(align="c") %>%
   kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
   kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
@@ -612,7 +651,8 @@ escEstSpp %>%
 <br>
 
 ### Estimate decision:
-For 2024 went with expanded AUC estimate (SL=35 days) as we had an early spot-check swim in pools that was a good indicator of SK timing/abundance early-on. The AUC curve is OK because of this early check. There were no SK noted in tribs and there is no enhancement of SK, so this gives a natural spawner/total escapement estimate of `r escEstSpp %>% filter(ShortSpecies=="SK", SystemName=="Nitinat River, Nitinat Lake") %>% pull(AdultExpAUCMidValue_R)` adults and `r escEstSpp %>% filter(ShortSpecies=="SK", SystemName=="Nitinat River, Nitinat Lake") %>% pull(JackExpAUCMidValue_R)` jack.  
+
+ 
 
 <br>
 
@@ -785,7 +825,7 @@ ggplot() +
            position = "stack", alpha=0.8, width=7, linewidth = 1) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
-  labs(x="", y="Spawning adult Coho", fill="Behaviour", colour="Segment") +
+  labs(x="", y="Observed adult Coho", fill="Behaviour", colour="Segment") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
@@ -795,31 +835,60 @@ Figure: Expanded live adult Coho (bars) and carcasses (black line). Bar fill ind
 
 <br>
 
+```{r}
+ggplot() +
+  geom_hline(aes(yintercept="18-17")) +
+  geom_hline(aes(yintercept="13-12"), linetype = "dashed") +
+  geom_tile(data = nitinat.SIL %>% 
+              filter(SBJ_ID=="Coho", NAME=="NITINAT RIVER") %>%
+              group_by(START_DTT, SEGMENT_NAME) %>% 
+              summarize(total = sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T),
+                        perc_spawn = sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T) / total),
+            aes(x=as.Date(START_DTT), y=SEGMENT_NAME, fill=perc_spawn)) +
+  scale_x_date(date_labels = "%b %d") +
+  scale_y_discrete(limits=rev) +
+  scale_fill_viridis_c(na.value = "gray90") +
+  labs(y="River segment", fill="Percent spawning") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, hjust=1),
+        axis.title.x = element_blank(),
+        axis.title = element_text(face="bold"),
+        legend.title = element_text(face="bold"))
+```
+
+Figure:  Coho spawning behaviour by reach break over each survey (snorkel and heli, if done). Solid black line denotes the differentiation between upper and lower Nitinat; dashed black line indicates where the hatchery is located along the river. Note heli and snorkel reach breaks are not the same. If any reach break is blank, it implies the surveyors missed the marker, and both reach counts were included in the one before. Counts with no Coho and/or no spawning Coho are indicated as gray (division by zero). 
+
+<br>
+
 <br>
 
 ## Snorkel, angling & swim-in counts
 
 ```{r}
 ggplot() +
-  geom_bar(data=nit.sil %>% 
-             filter(species=="Coho") %>% 
-             group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
-           aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
-           stat="identity", position="stack", alpha=0.7, size=1) +
+  geom_bar(data=nitinat.SIL %>% 
+             filter(SBJ_ID=="Coho", NAME=="NITINAT RIVER") %>% 
+             group_by(START_DTT, survey_type, segment_category) %>% 
+             summarize(Spawning = sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T),
+                       Holding = sum(SGA_LIVE_ADULTS_HOLDING, na.rm=T)) %>% 
+             pivot_longer(cols=c(Spawning, Holding), names_to="behaviour", values_to="count"),
+             # mutate(date = case_when(type=="Heli Flight" ~ as.Date("2025-10-21"),
+             #                         TRUE ~ date)), 
+           aes(x=as.Date(START_DTT), y=count, fill=behaviour, colour=segment_category), 
+           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
   geom_bar(data=nrh.co %>% 
-             filter(ParentActivityType=="Adult Capture", grepl("Swim In", InventoryLot, ignore.case=T)) %>% 
-             group_by(ActivityStartDate) %>% 
-             summarize(n=sum(TotalCount)),
-           aes(x=as.Date(ActivityStartDate), y=n), fill="black", stat="identity", alpha=0.7, width=5) +
+             filter(parent_activity_type=="Adult Capture", grepl("Swim Ins", inventory_lot)) %>% 
+             group_by(activity_start_date) %>% 
+             summarize(n=sum(total_count,na.rm=T)),
+           aes(x=as.Date(activity_start_date), y=n*1), fill="black", stat="identity", alpha=0.5, width=1) +
+
+  ## ******* NEED ANGLING DATES FROM CAROLINE??? 
   
-  geom_bar(data=nrh.co %>%
-             filter(OperationsLocation!="Nitinat Lake", !is.na(OperationsLocation), ActivityType=="Deposit to Holding")%>%
-             group_by(ActivityStartDate) %>% 
-             summarize(n=sum(TotalCount)),
-           aes(x=as.Date(ActivityStartDate), y=n*10), stat="identity", fill="green", alpha=0.7) +
+  # geom_bar(data=nrh.co %>%
+  #            filter(OperationsLocation!="Nitinat Lake", !is.na(OperationsLocation), ActivityType=="Deposit to Holding")%>%
+  #            group_by(ActivityStartDate) %>% 
+  #            summarize(n=sum(TotalCount)),
+  #          aes(x=as.Date(ActivityStartDate), y=n*10), stat="identity", fill="green", alpha=0.7) +
   scale_y_continuous(sec.axis = sec_axis(~./10, name="Swim-Ins/Angling")) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
@@ -836,13 +905,13 @@ Figure: Expanded adult Coho counts (large bars) and ALL swim-ins (narrow black b
 
 ```{r}
 ggplot(data=nrh.co %>%
-         filter(ParentActivityType=="Adult Capture", grepl("Lake", InventoryLot, ignore.case=T), 
-                grepl("Seine", CaptureMethod)) %>% 
-         group_by(ActivityStartDate, ExternalMark) %>% 
-         summarize(n=sum(TotalCount)) %>% 
-         group_by(ActivityStartDate) %>% 
+         filter(parent_activity_type=="Adult Capture", grepl("Lake", inventory_lot, ignore.case=T), 
+                grepl("Seine", capture_method)) %>% 
+         group_by(activity_start_date, external_mark) %>% 
+         summarize(n=sum(total_count)) %>% 
+         group_by(activity_start_date) %>% 
          mutate(mark_rate = n/sum(n))) +
-  geom_bar(aes(x=ActivityStartDate, y=mark_rate, fill=ExternalMark, colour=ExternalMark), 
+  geom_bar(aes(x=activity_start_date, y=mark_rate, fill=external_mark, colour=external_mark), 
            stat="identity", size=1, alpha=0.7) +
   theme_bw()
 ```
@@ -853,25 +922,25 @@ Figure: Mark rate of all coho caught in purse seine catches in Nitinat Lake. Exc
 
 ```{r}
 co_markrateALL <- nrh.co %>%
-  filter(ParentActivityType=="Adult Capture", grepl("Lake", InventoryLot, ignore.case=T), 
-         grepl("Seine", CaptureMethod)) %>% 
-  group_by(ExternalMark) %>% 
-  summarize(n=sum(TotalCount)) %>% 
+  filter(parent_activity_type=="Adult Capture", grepl("Lake", inventory_lot, ignore.case=T), 
+         grepl("Seine", capture_method)) %>% 
+  group_by(external_mark) %>% 
+  summarize(n=sum(total_count)) %>% 
   mutate(mark_rate = n/sum(n)) 
 
 co_markrateADULT <- nrh.co %>%
-  filter(ParentActivityType=="Adult Capture", grepl("Lake", InventoryLot, ignore.case=T), 
-         grepl("Seine", CaptureMethod)) %>% 
-  filter(MaturityClass%in%c("Male", "Female")) %>%
-  group_by(ExternalMark) %>% 
-  summarize(n=sum(TotalCount)) %>% 
+  filter(parent_activity_type=="Adult Capture", grepl("Lake", inventory_lot, ignore.case=T), 
+         grepl("Seine", capture_method)) %>% 
+  filter(maturity_class%in%c("Male", "Female")) %>%
+  group_by(external_mark) %>% 
+  summarize(n=sum(total_count)) %>% 
   mutate(mark_rate = n/sum(n)) 
 ```
 
 
-The overall mark rate of **ALL coho** caught in Nitinat Lake purse seine this year was **`r round(co_markrateALL[co_markrateALL$ExternalMark=="Clipped",]$mark_rate*100, 1)`%**. 
+The overall mark rate of **ALL coho** caught in Nitinat Lake purse seine this year was **`r round(co_markrateALL[co_markrateALL$external_mark=="Clipped",]$mark_rate*100, 1)`%**. 
 
-The overall mark rate of **ADULT coho** caught in Nitinat Lake purse seine this year was **`r round(co_markrateADULT[co_markrateADULT$ExternalMark=="Clipped",]$mark_rate*100, 1)`%**.
+The overall mark rate of **ADULT coho** caught in Nitinat Lake purse seine this year was **`r round(co_markrateADULT[co_markrateADULT$external_mark=="Clipped",]$mark_rate*100, 1)`%**.
 
 <br>
 
@@ -900,21 +969,24 @@ nitinat.SIL %>%
 
 ```{r}
 ggplot() +
-  geom_bar(data=nit.sil %>% 
-             filter(species=="Coho") %>% 
-             group_by(surveyNum, date, system) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
-           aes(x=as.Date(date), y=count, fill=behaviour, colour=system), 
-           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
-  geom_bar(data = tribs.sil %>% 
-             filter(species=="Coho") %>% 
-             group_by(system, date) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
-           aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
+  geom_bar(data=nitinat.SIL %>% 
+             filter(SBJ_ID=="Coho", grepl("NITINAT|PARKER|WORTHLESS|JASPER|NONAME", NAME, ignore.case=T)) %>% 
+             # mutate(trib_status = case_when(grepl("LITTLE NITINAT|PARKER|WORTHLESS|JASPER|NONAME", NAME, 
+             #                                      ignore.case=T) ~ "Tributary",
+             #                                TRUE ~ "Mainstem")) %>%
+             group_by(NAME, START_DTT) %>% 
+             summarize(Spawning=sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T),
+                       Holding = sum(SGA_LIVE_ADULTS_HOLDING, na.rm=T)) %>% 
+             pivot_longer(cols=c(Spawning, Holding), names_to="behaviour", values_to="count"), 
+           aes(x=as.Date(START_DTT), y=count, fill=behaviour, colour=NAME), 
+           stat="identity", position=position_dodge(width=4), alpha=0.7, size=1, width=4, linewidth = 1) +
+  # geom_bar(data = tribs.sil %>% 
+  #            filter(species=="Chinook") %>% 
+  #            group_by(system, date) %>% 
+  #            summarize(Spawning=sum(`adults # spawning`),
+  #                      Holding = sum(`adults # holding`)) %>% 
+  #            pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
+  #          aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
   scale_y_continuous(sec.axis = sec_axis(~./1, name="Trib count")) +
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
   labs(x="", y="mainstem count") +
@@ -971,32 +1043,17 @@ Figure: AUC curve for Nitinat mainstem Coho. Note in 2023 this had already exclu
 
 <br>
 
-Table: Raw swim data (raw and expanded live and dead) for Coho.
-
-```{r}
-AUCdataTable %>% 
-  filter(ShortSpecies=="CO") %>% 
-  select(ShortSpecies,Section_AreaInspected, SDate, WaterTemperature, WaterClarity, LiveAdults, DeadAdults,LiveJacks,DeadJacks, ExpLiveAdults,
-         ExpDeadAdults, ExpLiveJacks, ExpDeadJacks, OverallReliability, EstPctSeen) %>% 
-  mutate(across(c(LiveAdults:ExpDeadJacks), ~round(., 0))) %>% 
-  kableExtra::kbl(align="c") %>%
-  kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
-  kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
-```
-
-<br>
-
-Table: Escapement estimates for each system.   
-
 ```{r}
 escEstSpp %>% 
   filter(ShortSpecies=="CO", AREA!="20") %>% 
-  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, contains("Raw"), contains("FishDays"))) %>% 
+  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, #n, 
+            contains("Raw"), contains("FishDays"))) %>% 
   relocate(c(SystemName, AREA), .before=ShortSpecies) %>% 
   rename(FinalAdultEstimate = AdultNaturalReco,
          FinalJackEstimate = JackNaturalReco) %>% 
   mutate(across(FinalJackEstimate:FinalAdultEstimate, ~case_when(.<0 ~ 0,
                                                                  TRUE ~ .))) %>%
+  select(-c(Notes)) %>%
   kableExtra::kbl(align="c") %>%
   kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
   kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
@@ -1006,8 +1063,8 @@ escEstSpp %>%
 
 ### Estimate decision:
 
-For 2024 prelim decision used AUC with SL=30 days because saw a decline in counts and observed the start of spawning in the upper Nitinat on the last survey. However, noted that swim-ins entered hatchery before the final count, so can assume a lot of the fish seen in the lower on Oct 10 may have swum into the hatchery on their way to the upper (Nov 7). 30 day SL seems reasonable based on past values and behaviour (no evidence of delayed entry/rapid spawning). AUC with SL=30 gives 3,050 adults and 344 jacks (which also covers the raw peak live count); removing swim-ins (279 adults, 18 jacks) **results in a natural spawner estimate of `r escEstSpp %>% filter(ShortSpecies=="CO", SystemName=="Nitinat River, Nitinat Lake") %>% pull(AdultExpAUCMidValue_R) - nrh.co %>% filter(grepl("swim", InventoryLot, ignore.case=T), ParentActivityType=="Adult Capture", MaturityClass %in%c("Male", "Female")) %>% summarize(sum=sum(TotalCount)) %>% pull(sum)` adults and `r escEstSpp %>% filter(ShortSpecies=="CO", SystemName=="Nitinat River, Nitinat Lake") %>% pull(JackExpAUCMidValue_R) - nrh.co %>% filter(grepl("swim", InventoryLot, ignore.case=T), ParentActivityType=="Adult Capture", MaturityClass %in%c("Jack")) %>% summarize(sum=sum(TotalCount)) %>% pull(sum)` jacks**. This does not include Lake broodstock or Worthless coho (57 adults, 13 jacks). There was no angled broodstock this year. Gave Type-5 as some thought this could be an under-estimate compared to previous years, but limited ability to adjust upward more than already done. 
-*This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
+
+
 
 
 <br>
@@ -1121,9 +1178,9 @@ Figure: Observed Adult Chum (blue) and the same counts expanded for % population
 ## Counts & environmentals
 
 ```{r}
-pdf(file = here::here("outputs", "figures", paste0(analysis_year, " CM count-enviro.pdf")),   
-    width = 11, # The width of the plot in inches
-    height = 8.5) # The height of the plot in inches
+# pdf(file = here::here("outputs", "figures", paste0(analysis_year, " CM count-enviro.pdf")),   
+#     width = 11, # The width of the plot in inches
+#     height = 8.5) # The height of the plot in inches
 
 ggplot() +
   # Plot water data -------------
@@ -1155,7 +1212,7 @@ geom_ribbon(data=nitinat.water %>%
         legend.text = element_text(size=10),
         legend.title = element_text(size=15))
 
-dev.off()
+# dev.off()
 ```
 
 Figure: Chum counts (raw live adults), water levels (blue line)
@@ -1190,10 +1247,10 @@ ggplot() +
                        adults_holding = sum(SGA_LIVE_ADULTS_HOLDING, na.rm=T)) %>%
              pivot_longer(cols=c(adults_spawning, adults_holding), names_to = "behaviour", values_to = "count"), 
            aes(x=date, y=count, colour=segment_category, fill=behaviour), stat="identity", 
-           position = "stack", alpha=0.8, width=7, linewidth = 1) +
-  scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
+           position = "stack", alpha=0.8, width=2, linewidth = 1) +
+  scale_x_date(date_breaks="3 day", date_labels = "%b %d")+
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
-  labs(x="", y="Spawning adult Chum", fill="Behaviour", colour="Segment") +
+  labs(x="", y="Observed adult Chum", fill="Behaviour", colour="Segment") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
@@ -1203,29 +1260,54 @@ Figure: Expanded live adult Chum (bars) and carcasses (black line). Bar fill ind
 
 <br>
 
+```{r}
+ggplot() +
+  geom_hline(aes(yintercept="18-17")) +
+  geom_hline(aes(yintercept="13-12"), linetype = "dashed") +
+  geom_tile(data = nitinat.SIL %>% 
+              filter(SBJ_ID=="Chum", NAME=="NITINAT RIVER") %>%
+              group_by(START_DTT, SEGMENT_NAME) %>% 
+              summarize(total = sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T),
+                        perc_spawn = sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T) / total),
+            aes(x=as.Date(START_DTT), y=SEGMENT_NAME, fill=perc_spawn)) +
+  scale_x_date(date_labels = "%b %d") +
+  scale_y_discrete(limits=rev) +
+  scale_fill_viridis_c(na.value = "gray90") +
+  labs(y="River segment", fill="Percent spawning") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, hjust=1),
+        axis.title.x = element_blank(),
+        axis.title = element_text(face="bold"),
+        legend.title = element_text(face="bold"))
+```
+
+Figure:  Chum spawning behaviour by reach break over each survey (snorkel and heli, if done). Solid black line denotes the differentiation between upper and lower Nitinat; dashed black line indicates where the hatchery is located along the river. Note heli and snorkel reach breaks are not the same. If any reach break is blank, it implies the surveyors missed the marker, and both reach counts were included in the one before. Counts with no Chum and/or no spawning Chum are indicated as gray (division by zero). 
+
+<br>
+
 <br>
 
 ## Snorkel & swim-in counts
 
 ```{r}
 ggplot() +
-  geom_bar(data=nit.sil %>% 
-             filter(species=="Chum") %>% 
-             group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count") %>% 
-             mutate(date = case_when(type=="Heli Flight" ~ as.Date("2024-10-23"),
-                                     TRUE ~ date)), 
-           aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
+  geom_bar(data=nitinat.SIL %>% 
+             filter(SBJ_ID=="Chum", NAME=="NITINAT RIVER") %>% 
+             group_by(START_DTT, survey_type, segment_category) %>% 
+             summarize(Spawning = sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T),
+                       Holding = sum(SGA_LIVE_ADULTS_HOLDING, na.rm=T)) %>% 
+             pivot_longer(cols=c(Spawning, Holding), names_to="behaviour", values_to="count"),
+             # mutate(date = case_when(type=="Heli Flight" ~ as.Date("2025-10-21"),
+             #                         TRUE ~ date)), 
+           aes(x=as.Date(START_DTT), y=count, fill=behaviour, colour=segment_category), 
            stat="identity", position="stack", alpha=0.7, size=1, width=1) +
   geom_bar(data=nrh.cm %>% 
-             filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot)) %>% 
-             group_by(ActivityStartDate) %>% 
-             summarize(n=sum(TotalCount)),
-           aes(x=as.Date(ActivityStartDate), y=n*10), fill="black", stat="identity", alpha=0.5, width=1) +
-  scale_y_continuous(sec.axis = sec_axis(~./10, name="Swim ins")) +
-  scale_x_date(date_breaks="7 day", date_labels = "%b %d", limits=c(as.Date("2024-09-15"), as.Date("2024-11-15"))) +
+             filter(parent_activity_type=="Adult Capture", grepl("Swim Ins", inventory_lot)) %>% 
+             group_by(activity_start_date) %>% 
+             summarize(n=sum(total_count,na.rm=T)),
+           aes(x=as.Date(activity_start_date), y=n*1), fill="black", stat="identity", alpha=0.5, width=1) +
+  scale_y_continuous(sec.axis = sec_axis(~./1, name="Swim ins")) +
+  scale_x_date(date_breaks="2 day", date_labels = "%b %d") +
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
   labs(x="", y="Adult Chum", fill="Behaviour", colour="Segment") +
   theme_bw() +
@@ -1233,6 +1315,10 @@ ggplot() +
 ```
 
 Figure: Expanded Chum counts (large bars) and swim-ins (narrow black bars). Adult bar fill colours indicate behaviour (spawning=gray, holding=white), bar line colour indicates river segment (lower=pink, upper=blue).
+
+<br>
+
+Total number of swim-ins this year is: `r nrh.cm %>% filter(parent_activity_type=="Adult Capture", grepl("Swim Ins", inventory_lot)) %>% summarize(sum(total_count))` adults. 
 
 <br>
 
@@ -1261,23 +1347,25 @@ nitinat.SIL %>%
 
 ```{r}
 ggplot() +
-  geom_bar(data=nit.sil %>% 
-             filter(species=="Chum") %>% 
-             group_by(surveyNum, date, system) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
-           aes(x=as.Date(date), y=count, fill=behaviour, colour=system), 
-           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
-  geom_bar(data = tribs.sil %>% 
-             filter(species=="Chum") %>% 
-             group_by(system, date) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
-           aes(x=as.Date(date), y=count*10, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
-  scale_x_date(limits=c(as.Date("2024-09-15"), as.Date("2024-11-15"))) +
-  scale_y_continuous(sec.axis = sec_axis(~./10, name="Trib count")) +
+  geom_bar(data=nitinat.SIL %>% 
+             filter(SBJ_ID=="Chum", grepl("NITINAT|PARKER|WORTHLESS|JASPER|NONAME", NAME, ignore.case=T)) %>% 
+             # mutate(trib_status = case_when(grepl("LITTLE NITINAT|PARKER|WORTHLESS|JASPER|NONAME", NAME, 
+             #                                      ignore.case=T) ~ "Tributary",
+             #                                TRUE ~ "Mainstem")) %>%
+             group_by(NAME, START_DTT) %>% 
+             summarize(Spawning=sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T),
+                       Holding = sum(SGA_LIVE_ADULTS_HOLDING, na.rm=T)) %>% 
+             pivot_longer(cols=c(Spawning, Holding), names_to="behaviour", values_to="count"), 
+           aes(x=as.Date(START_DTT), y=count, fill=behaviour, colour=NAME), 
+           stat="identity", position=position_dodge(width=4), alpha=0.7, size=1, width=4, linewidth = 1) +
+  # geom_bar(data = tribs.sil %>% 
+  #            filter(species=="Chinook") %>% 
+  #            group_by(system, date) %>% 
+  #            summarize(Spawning=sum(`adults # spawning`),
+  #                      Holding = sum(`adults # holding`)) %>% 
+  #            pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
+  #          aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
+  scale_y_continuous(sec.axis = sec_axis(~./1, name="Trib count")) +
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
   labs(x="", y="mainstem count") +
   theme_bw()
@@ -1356,32 +1444,19 @@ Figure: AUC curve for Nitinat mainstem Chum.
 
 <br>
 
-Table: Raw swim data (raw and expanded live and dead) for Chum.
-
-```{r}
-AUCdataTable %>% 
-  filter(ShortSpecies=="CM") %>% 
-  select(ShortSpecies,Section_AreaInspected, SDate, WaterTemperature, WaterClarity, LiveAdults, DeadAdults,LiveJacks,DeadJacks, ExpLiveAdults,
-         ExpDeadAdults, ExpLiveJacks, ExpDeadJacks, OverallReliability, EstPctSeen) %>% 
-  mutate(across(c(LiveAdults:ExpDeadJacks), ~round(., 0))) %>% 
-  kableExtra::kbl(align="c") %>%
-  kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
-  kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
-```
-
-<br>
-
 Table: Escapement estimates for each system.   
 
 ```{r}
 escEstSpp %>% 
   filter(ShortSpecies=="CM", AREA!="20") %>% 
-  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, contains("Raw"), contains("FishDays"))) %>% 
+  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, #n, 
+            contains("Raw"), contains("FishDays"))) %>% 
   relocate(c(SystemName, AREA), .before=ShortSpecies) %>% 
   rename(FinalAdultEstimate = AdultNaturalReco,
          FinalJackEstimate = JackNaturalReco) %>% 
   mutate(across(FinalJackEstimate:FinalAdultEstimate, ~case_when(.<0 ~ 0,
                                                                  TRUE ~ .))) %>%
+  select(-c(Notes)) %>%
   kableExtra::kbl(align="c") %>%
   kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
   kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
@@ -1391,9 +1466,14 @@ escEstSpp %>%
 
 ### Estimate decision:
 
-For 2024 used expanded AUC with SL=9 days. Tons of chum this year constantly piling in and spawning, but always tons of fresh fish seen on every swim despite the numbers already in the river. Did not remove swim-ins because most were into the hatchery prior to the peak count (heli, full system), and spawning was definitely underway by the peak count (noted fully spawning throughout habitat) so it's unlikely there was much duplication of fish counted on snorkel surveys. The AUC estimate gives about 260k chum for the mainstem but does not include Worthless and Little Nitinat spawners (these are in addition to the mainstem). **Results in a natural spawner estimate of `r escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Nitinat River, Nitinat Lake") %>% pull(AdultExpAUCMidValue_R)` adult chum** plus broodstock `r nrh.cm %>% filter(ParentActivityType=="Adult Capture", CaptureMethod!="Gillnet") %>% summarize(n=sum(TotalCount)) %>% pull(n)` and plus Little Nitinat (`r escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Little Nitinat River") %>% pull(AdultNaturalReco)`) and Worthless (`r escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Worthless Creek") %>% pull(AdultNaturalReco)`) means a total system escapement of `r escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Nitinat River, Nitinat Lake") %>% pull(AdultExpAUCMidValue_R) + nrh.cm %>% filter(ParentActivityType=="Adult Capture", CaptureMethod!="Gillnet") %>% summarize(n=sum(TotalCount)) %>% pull(n) + escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Little Nitinat River") %>% pull(AdultNaturalReco) + escEstSpp %>% filter(ShortSpecies=="CM", SystemName=="Worthless Creek") %>% pull(AdultNaturalReco)`
-**note swim-ins from EPRO and Caroline's form are off by 200 females, so estimate is +/- 200 fish until can sort it out at the meeting**
-*This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*
+Assumed the following for broodstock operations:
+- Swim-ins mostly came in after the peak heli count on Oct 21. There were only ~2100 holding Chum counted on that flight, but 8,334 Chum swam into the hatchery. The flight noted that counting was often difficult at edges and in deep, dark pools, so it's possible that fish holding in pools (not spawning) were missed. Therefore **the swim-ins should be in addition to the river escapement estimate**. 
+
+Chum arrival this year was quite late for Nitinat, which also tracks elsewhere on the island: Johnstone Strait test fishery saw a very late, large bump of Chum just days before the fishery was set to close. This is reflected in several of the figures above. Note in the behavioural figures, Chum arrived and were immediately fungus-y and spawning. In particular, there was a massive bump sometime between Oct 16 and 21st; when we flew Oct 21 those fish were already all entirely spawning, which implies a very short residence time. For this reason, we selected the expanded AUC estimate with the shorter survey life (8 days). 
+
+This means the estimate would be `r escEstSpp[escEstSpp$ShortSpecies=="CM",]$AdultExpAUCHighValue` and the swim-ins (`r nrh.cm %>% filter(parent_activity_type=="Adult Capture", maturity_class %in% c("Male", "Female"), grepl("Swim Ins", inventory_lot)) %>% summarize(n=sum(total_count,na.rm=T)) %>% pull(n)`) would be in addition to it (so they don't need to be accounted for here). 
+
+Note this year may be a low estimate due to two lake turnover events: September 17 and October 14. On the Sept 17th event, the hatchery lost ~3000 Chinook broodstock that were being held in the lake pens. There was speculation that fish in the lake may have been able to swim away and avoid the low oxygen conditions, while those stuck in the pens died. However, the extent of the die off from both events is unknown. Hatchery staff reported the lake smelled like rotten eggs on Oct 14 as well (presumably due to anoxic layer coming to surface). The early event would have impacted Chinook more, while the later event would have impacted Chum more (if there were impacts). 
 
 <br>
 
@@ -1490,7 +1570,8 @@ ggplot() +
   geom_bar(data=escEstAUCsource %>% 
              filter(ShortSpecies=="CN") %>% 
              pivot_longer(c(LiveAdults:TotalJacks,ExpLiveAdults:ExpTotalJacks), names_to="est_type", values_to="n") %>% 
-             filter(est_type %in% c("LiveAdults", "ExpLiveAdults")), 
+             filter(est_type %in% c("LiveAdults", "ExpLiveAdults")) %>% 
+             mutate(n = replace_na(n, 0)), 
            aes(x=as.Date(SDate), y=n, colour=est_type, fill=est_type), stat="identity", position=position_dodge(width=5),
            alpha=0.5, width=5) +
   labs(x="", y="Adult Chinook counts") +
@@ -1529,8 +1610,8 @@ geom_ribbon(data=nitinat.water %>%
              filter(SBJ_ID=="Chinook", NAME=="NITINAT RIVER") %>% 
              group_by(START_DTT, survey_type, segment_category) %>% 
              summarize(n=sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T)), 
-           aes(x=as.Date(START_DTT), y=n, group=survey_type, fill=segment_category, colour=segment_category), 
-           stat="identity", position="stack", alpha=0.7, width=5) +
+           aes(x=as.Date(START_DTT), y=n, group=survey_type, fill=segment_category, 
+               linetype = survey_type),  colour="black", stat="identity", position="stack", alpha=0.7, width=5) +
   labs(x="", y="Observed adult Chinook") +
   scale_y_continuous(sec.axis = sec_axis(~./1000, name="Water level (m)")) +
   scale_x_date(date_breaks="7 day", date_labels="%b %d") +
@@ -1557,30 +1638,30 @@ Figure: Chinook counts (raw live adults), water levels (blue line)
 ggplot() +
     # ---- DEAD -----
   geom_point(data=nitinat.SIL %>%
-               filter(NAME=="NITINAT RIVER" & SBJ_ID =="Chinook") %>%
+               filter(NAME=="NITINAT RIVER" & SBJ_ID =="Chinook", survey_type!="Heli") %>%
                group_by(date, SBJ_ID) %>%
                summarize(total_adults_ded=sum(SGA_DEAD_ADULTS_OBSERVED, na.rm=T)) %>% 
                filter(total_adults_ded>0),
              aes(x=date, y=total_adults_ded), colour="black") +
   # # ---- DEAD -----  
   geom_line(data=nitinat.SIL %>%
-               filter(NAME=="NITINAT RIVER" & SBJ_ID =="Chinook") %>%
+               filter(NAME=="NITINAT RIVER" & SBJ_ID =="Chinook", survey_type!="Heli") %>%
                group_by(date, SBJ_ID) %>%
                summarize(total_adults_ded=sum(SGA_DEAD_ADULTS_OBSERVED, na.rm=T)) %>% 
                filter(total_adults_ded>0),
             aes(x=date, y=total_adults_ded), colour="black") +
   # ---- LIVE ----
   geom_bar(data=nitinat.SIL %>% 
-             filter(NAME=="NITINAT RIVER" & SBJ_ID =="Chinook") %>%
+             filter(NAME=="NITINAT RIVER" & SBJ_ID =="Chinook", survey_type!="Heli") %>%
              group_by(date, SBJ_ID, segment_category, survey_type) %>% 
              summarize(adults_spawning = sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T),
                        adults_holding = sum(SGA_LIVE_ADULTS_HOLDING, na.rm=T)) %>%
              pivot_longer(cols=c(adults_spawning, adults_holding), names_to = "behaviour", values_to = "count"), 
            aes(x=date, y=count, colour=segment_category, fill=behaviour), stat="identity", 
-           position = "stack", alpha=0.8, width=7, linewidth = 1) +
+           position = "stack", alpha=0.8, width=5, linewidth = 1) +
   scale_x_date(date_breaks="7 day", date_labels = "%b %d")+
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
-  labs(x="", y="Spawning adult Chinook", fill="Behaviour", colour="Segment") +
+  labs(x="", y="Observed adult Chinook", fill="Behaviour", colour="Segment") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
@@ -1590,44 +1671,84 @@ Figure: Expanded live adult Chinook (bars) and carcasses (black line). Bar fill 
 
 <br>
 
+```{r}
+ggplot() +
+  geom_hline(aes(yintercept="18-17")) +
+  geom_hline(aes(yintercept="13-12"), linetype = "dashed") +
+  geom_tile(data = nitinat.SIL %>% 
+              filter(SBJ_ID=="Chinook", NAME=="NITINAT RIVER") %>%
+              group_by(START_DTT, SEGMENT_NAME) %>% 
+              summarize(total = sum(SGA_LIVE_ADULTS_OBSERVED, na.rm=T),
+                        perc_spawn = sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T) / total),
+            aes(x=as.Date(START_DTT), y=SEGMENT_NAME, fill=perc_spawn)) +
+  scale_x_date(date_labels = "%b %d") +
+  scale_y_discrete(limits=rev) +
+  scale_fill_viridis_c(na.value = "gray90") +
+  labs(y="River segment", fill="Percent spawning") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, hjust=1),
+        axis.title.x = element_blank(),
+        axis.title = element_text(face="bold"),
+        legend.title = element_text(face="bold"))
+```
+
+Figure:  Chinook spawning behaviour by reach break over each survey (snorkel and heli, if done). Solid black line denotes the differentiation between upper and lower Nitinat; dashed black line indicates where the hatchery is located along the river. Note heli and snorkel reach breaks are not the same. If any reach break is blank, it implies the surveyors missed the marker, and both reach counts were included in the one before. Counts with no Chinook and/or no spawning Chinook are indicated as gray (division by zero). 
+
 <br>
 
-## Snorkel & swim-in counts
+<br>
+
+## Snorkel, river seine & swim-in counts
 
 ```{r}
 ggplot() +
-  geom_bar(data=nit.sil %>% 
-             filter(species=="Chinook") %>% 
-             group_by(date, type, `upper/lower (for Nitinat River only)`) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
-           aes(x=as.Date(date), y=count, fill=behaviour, colour=`upper/lower (for Nitinat River only)`), 
-           stat="identity", position="stack", alpha=0.7, width=2, size=1) +
+  geom_bar(data=nitinat.SIL %>% 
+             filter(SBJ_ID=="Chinook", NAME=="NITINAT RIVER", survey_type!="Heli") %>% 
+             group_by(START_DTT, survey_type, segment_category) %>% 
+             summarize(Spawning = sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T),
+                       Holding = sum(SGA_LIVE_ADULTS_HOLDING, na.rm=T)) %>% 
+             pivot_longer(cols=c(Spawning, Holding), names_to="behaviour", values_to="count"),
+             # mutate(date = case_when(type=="Heli Flight" ~ as.Date("2025-10-21"),
+             #                         TRUE ~ date)), 
+           aes(x=as.Date(START_DTT), y=count, fill=behaviour, colour=segment_category), 
+           stat="identity", position="stack", alpha=0.7, size=1, width=1) +
   geom_bar(data=nrh.cn %>% 
-             filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass%in%c("Male","Female")) %>% 
-             group_by(ActivityStartDate) %>% 
-             summarize(n=sum(TotalCount)),
-           aes(x=as.Date(ActivityStartDate), y=n*1), fill="black", stat="identity", alpha=0.5) +
+             filter(parent_activity_type=="Adult Capture", grepl("Swim Ins", inventory_lot)) %>% 
+             group_by(activity_start_date) %>% 
+             summarize(n=sum(total_count,na.rm=T)),
+           aes(x=as.Date(activity_start_date), y=n*1), fill="black", stat="identity", alpha=0.5, width=1) +
+  
+    geom_bar(data=nrh.cn %>% 
+             filter(parent_activity_type=="Adult Capture", operations_location=="Nitinat R") %>% 
+             group_by(activity_start_date) %>% 
+             summarize(n=sum(total_count,na.rm=T)),
+           aes(x=as.Date(activity_start_date), y=n*1), fill="red", stat="identity", width=1) +
+  
   scale_y_continuous(sec.axis = sec_axis(~./1, name="Swim ins")) +
-  scale_x_date(date_breaks="7 day", date_labels = "%b %d") +
+  scale_x_date(date_breaks="2 day", date_labels = "%b %d") +
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
   labs(x="", y="Adult Chinook", fill="Behaviour", colour="Segment") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=45, hjust=1))
 ```
 
-Figure: Expanded adult Chinook counts (large bars) and swim-ins (narrow black bars). Adult bar fill colours indicate behaviour (spawning=gray, holding=white), bar line colour indicates river segment (lower=pink, upper=blue).
+Figure: Expanded adult Chinook counts (large bars) and swim-ins (narrow black bars). Adult bar fill colours indicate behaviour (spawning=gray, holding=white), bar line colour indicates river segment (lower=pink, upper=blue). If a solid red bar is present, this indicates a river beach seine event for broodstock collection. 
 
 <br>
 
-Total number of swim-ins this year is: `r nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot)) %>% summarize(sum(TotalCount))`, of which `r nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass!="Jack") %>% summarize(sum(TotalCount))` were adults. 
+Total number of swim-ins this year is: `r nrh.cn %>% filter(parent_activity_type=="Adult Capture", grepl("Swim Ins", inventory_lot)) %>% summarize(sum(total_count))`, of which `r nrh.cn %>% filter(parent_activity_type=="Adult Capture", grepl("Swim Ins", inventory_lot), maturity_class!="Jack") %>% summarize(sum(total_count))` were adults. 
+
+The total number collected from river beach seining is: `r nrh.cn %>% filter(parent_activity_type=="Adult Capture", operations_location=="Nitinat R") %>% summarize(sum(total_count))`, of which `r nrh.cn %>% filter(parent_activity_type=="Adult Capture", operations_location=="Nitinat R", maturity_class!="Jack") %>% summarize(sum(total_count))` were adults. 
 
 <br>
 
 <br>
 
 ## Tributaries (River and Lake)
+
+The following section is largely to help with determining whether Nitinat River trib counts (Parker, Worthless, Jasper, NoName, Little Nitinat) need to be in addition to the mainstem count, or if we think the fish that ended up in the tribs were captured in the mainstem swims (so don't need to be in addition to, and should be subtracted from the mainstem count). 
+
+In some years there aren't tributary surveys, so this may not apply. 
 
 ```{r}
 nitinat.SIL %>% 
@@ -1648,21 +1769,24 @@ nitinat.SIL %>%
 
 ```{r}
 ggplot() +
-  geom_bar(data=nit.sil %>% 
-             filter(species=="Chinook") %>% 
-             group_by(surveyNum, date, system) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"), 
-           aes(x=as.Date(date), y=count, fill=behaviour, colour=system), 
-           stat="identity", position="stack", alpha=0.7, size=1, width=2) +
-  geom_bar(data = tribs.sil %>% 
-             filter(species=="Chinook") %>% 
-             group_by(system, date) %>% 
-             summarize(Spawning=sum(`adults # spawning`),
-                       Holding = sum(`adults # holding`)) %>% 
-             pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
-           aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
+  geom_bar(data=nitinat.SIL %>% 
+             filter(SBJ_ID=="Chinook", grepl("NITINAT|PARKER|WORTHLESS|JASPER|NONAME", NAME, ignore.case=T)) %>% 
+             # mutate(trib_status = case_when(grepl("LITTLE NITINAT|PARKER|WORTHLESS|JASPER|NONAME", NAME, 
+             #                                      ignore.case=T) ~ "Tributary",
+             #                                TRUE ~ "Mainstem")) %>%
+             group_by(NAME, START_DTT) %>% 
+             summarize(Spawning=sum(SGA_LIVE_ADULTS_SPAWNING, na.rm=T),
+                       Holding = sum(SGA_LIVE_ADULTS_HOLDING, na.rm=T)) %>% 
+             pivot_longer(cols=c(Spawning, Holding), names_to="behaviour", values_to="count"), 
+           aes(x=as.Date(START_DTT), y=count, fill=behaviour, colour=NAME), 
+           stat="identity", position=position_dodge(width=4), alpha=0.7, size=1, width=4, linewidth = 1) +
+  # geom_bar(data = tribs.sil %>% 
+  #            filter(species=="Chinook") %>% 
+  #            group_by(system, date) %>% 
+  #            summarize(Spawning=sum(`adults # spawning`),
+  #                      Holding = sum(`adults # holding`)) %>% 
+  #            pivot_longer(cols=c(Spawning,Holding), names_to="behaviour", values_to="count"),
+  #          aes(x=as.Date(date), y=count*1, colour=system, fill=behaviour), stat="identity",  alpha=0.8, size=1, width=1) +
   scale_y_continuous(sec.axis = sec_axis(~./1, name="Trib count")) +
   scale_fill_manual(breaks=waiver(), values=c("transparent", "gray")) +
   labs(x="", y="mainstem count") +
@@ -1746,18 +1870,22 @@ Figure: AUC curve for Nitinat mainstem Chinook.
 
 <br>
 
-Table: Raw swim data (raw and expanded live and dead) for Chinook.
 
-```{r}
-AUCdataTable %>% 
-  filter(ShortSpecies=="CN") %>% 
-  select(ShortSpecies,Section_AreaInspected, SDate, WaterTemperature, WaterClarity, 
-         LiveAdults, DeadAdults,LiveJacks,DeadJacks, ExpLiveAdults,
-         ExpDeadAdults, ExpLiveJacks, ExpDeadJacks, OverallReliability, EstPctSeen) %>% 
-  mutate(across(c(LiveAdults:ExpDeadJacks), ~round(., 0))) %>% 
-  kableExtra::kbl(align="c") %>%
-  kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
-  kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
+
+```{r eval=F}
+# DISCTONINUED: Not a very helpful table/section so have removed. Retained code if want to keep in future
+
+# Table: Raw swim data (raw and expanded live and dead) for Chinook.
+
+# AUCdataTable %>% 
+#   filter(ShortSpecies=="CN") %>% 
+#   select(ShortSpecies,Section_AreaInspected, SDate, WaterTemperature, WaterClarity, 
+#          LiveAdults, DeadAdults,LiveJacks,DeadJacks, ExpLiveAdults,
+#          ExpDeadAdults, ExpLiveJacks, ExpDeadJacks, OverallReliability, EstPctSeen) %>% 
+#   mutate(across(c(LiveAdults:ExpDeadJacks), ~round(., 0))) %>% 
+#   kableExtra::kbl(align="c") %>%
+#   kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
+#   kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
 ```
 
 <br>
@@ -1767,13 +1895,14 @@ Table: Escapement estimate options (AUC/PL+D) for each system.
 ```{r}
 escEstSpp %>% 
   filter(ShortSpecies=="CN", AREA!="20") %>% 
-  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, 
+  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, #n, 
             contains("Raw"), contains("FishDays"))) %>% 
   relocate(c(SystemName, AREA), .before=ShortSpecies) %>% 
   rename(FinalAdultEstimate = AdultNaturalReco,
          FinalJackEstimate = JackNaturalReco) %>% 
   mutate(across(FinalJackEstimate:FinalAdultEstimate, ~case_when(.<0 ~ 0,
                                                                  TRUE ~ .))) %>%
+  select(-c(Notes)) %>%
   kableExtra::kbl(align="c") %>%
   kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
   kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
@@ -1783,11 +1912,24 @@ escEstSpp %>%
 
 ### Estimate decision:   
 
-For 2024, suggest that swim-ins be subtracted from the mid-point AUC estimate to get to ~10k spawners ultimately. NRH observations fall closer to ~10-11k, and we only saw about 9k adults on swims. The Hatchery also struggled to get broodstock this year and did not meet their brood targets, whereas last year they had no issue and the escapement estimated landed around ~15k. Therefore escapement this year should be considerably lower. 
-Looking at the swim-in timing and spawning, spawning started up after most of the fish swam into the hatchery, which suggests some of the mainstem fish counted on Sept 19 (lower) and even Oct 1 (minimal spawning in the lower). Most swim-ins were into the hatchery by the Oct 11 survey which had a lot of spawning. I would recommend subtracting the swim-ins - even the late bump ~Oct 19 because i think the AUC curve covers this component within the area integrated under the curve.
-Given this, if we took the mid point estimate of `r escEstSpp %>% filter(ShortSpecies=="CN", SystemName=="Nitinat River, Nitinat Lake") %>% group_by(AdultExpAUCMidValue_R) %>% summarize() %>% pull()` minus `r nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass!="Jack") %>% summarize(sum(TotalCount)) %>% pull()` adult swim-ins leaves `r (escEstSpp %>% filter(ShortSpecies=="CN", SystemName=="Nitinat River, Nitinat Lake") %>% group_by(AdultExpAUCMidValue_R) %>% summarize() %>% pull()) - (nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass!="Jack") %>% summarize(sum(TotalCount)) %>% pull())` natural adult spawners. 
-Likewise, jacks would end up being `r (escEstSpp %>% filter(ShortSpecies=="CN", SystemName=="Nitinat River, Nitinat Lake") %>% group_by(JackExpAUCMidValue_R) %>% summarize() %>% pull()) - (nrh.cn %>% filter(ParentActivityType=="Adult Capture", grepl("Swim Ins", InventoryLot), MaturityClass=="Jack") %>% summarize(sum(TotalCount)) %>% pull())` natural jack spawners. 
-*This is subject to change; see EscBatchHardCopy report for specific estimate abundance.*  
+Prior to this RMarkdown script I had already decided to omit the heli survey this year as it was not timed well for Chinook, and the counting was difficult in cases where Chinook might be post-spawn (pools, edges). This is reflected in most, if not all of the graphs with the survey omitted. 
+
+In 2025, assumed the following for broodstock operations:
+- River beach seine on Sept 23 fish were removed right before a swim and it's possible they entered since the last swim on Sept 12. Therefore, **beach seine removals need to be ADDED to the escapement estimate**. 
+- Assume most of the swim-ins were captured in the Sept 25/Oct 8 swims - on Sept 25 the vast majority were in the lower river, none spawning. Roughly the same number were observed 1 week later, but much more spawning this time, though still lots of holding fish in the lower not committed to a location yet. The swim period captured the swim in period well, and I expect that the AUC expansions and accounting for survey life will capture these fish within the estimate. Therefore **swim-ins need to be removed from the final estimate**.
+
+Opted for the middle-range SL for AUC for the preliminary estimate as the run timing was normal, despite the lake turnover events, low early water, and overall odd year for Chum arrival (late). Chinook entered the system early Sept which may have been a bit late, but was not linked to much of a rain event. Chinook already peaked in the system by the major rains, and spawn/die-off timing was relatively normal and predictable. No tributaries to account for this year. 
+
+Therefore, the final estimate for adult Chinook should be `r escEstSpp[escEstSpp$ShortSpecies=="CN",]$AdultExpAUCMidValue_R` minus `r nrh.cn %>% filter(parent_activity_type=="Adult Capture", maturity_class %in% c("Male", "Female"), grepl("Swim Ins", inventory_lot)) %>% summarize(n=sum(total_count,na.rm=T)) %>% pull(n)` swim-ins, 
+
+
+
+
+plus `r nrh.cn %>% filter(parent_activity_type=="Adult Capture", maturity_class %in% c("Male", "Female"), operations_location=="Nitinat R") %>% summarize(n=sum(total_count,na.rm=T)) %>% pull(n)` seined fish, **resulting in** `r escEstSpp[escEstSpp$ShortSpecies=="CN",]$AdultExpAUCMidValue_R - nrh.cn %>% filter(parent_activity_type=="Adult Capture", maturity_class %in% c("Male", "Female"), grepl("Swim Ins", inventory_lot)) %>% summarize(n=sum(total_count,na.rm=T)) %>% pull(n) + nrh.cn %>% filter(parent_activity_type=="Adult Capture", maturity_class %in% c("Male", "Female"), operations_location=="Nitinat R") %>% summarize(n=sum(total_count,na.rm=T)) %>% pull(n)` **adults**
+**and** 
+`r escEstSpp[escEstSpp$ShortSpecies=="CN",]$JackExpAUCMidValue_R - nrh.cn %>% filter(parent_activity_type=="Adult Capture", maturity_class %in% c("Jack"), grepl("Swim Ins", inventory_lot)) %>% summarize(n=sum(total_count, na.rm=T)) %>% pull(n) + nrh.cn %>% filter(parent_activity_type=="Adult Capture", maturity_class %in% c("Jack"), operations_location=="Nitinat R") %>% summarize(n=sum(total_count,na.rm=T)) %>% pull(n)` **jacks.**
+
+Note this year may be a low estimate due to two lake turnover events: September 17 and October 14. On the Sept 17th event, the hatchery lost ~3000 Chinook broodstock that were being held in the lake pens. There was speculation that fish in the lake may have been able to swim away and avoid the low oxygen conditions, while those stuck in the pens died. However, the extent of the die off from both events is unknown. Hatchery staff reported the lake smelled like rotten eggs on Oct 14 as well (presumably due to anoxic layer coming to surface). The early event would have impacted Chinook more, while the later event would have impacted Chum more (if there were impacts). 
 
 <br>
 
@@ -1899,12 +2041,14 @@ Table: Escapement estimates for each system.
 ```{r}
 escEstSpp %>% 
   filter(ShortSpecies=="PK", AREA!="20") %>% 
-  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, n, contains("Raw"), contains("FishDays"))) %>% 
+  select(-c(WatershedCode, contains("Recommend"), EstimateConfidence, OptimumEscapement, #n, 
+            contains("Raw"), contains("FishDays"))) %>% 
   relocate(c(SystemName, AREA), .before=ShortSpecies) %>% 
   rename(FinalAdultEstimate = AdultNaturalReco,
          FinalJackEstimate = JackNaturalReco) %>% 
   mutate(across(FinalJackEstimate:FinalAdultEstimate, ~case_when(.<0 ~ 0,
                                                                  TRUE ~ .))) %>%
+  select(-c(Notes)) %>%
   kableExtra::kbl(align="c") %>%
   kableExtra::kable_paper("hover", full_width=T, position = "center") %>%
   kableExtra::collapse_rows(columns=c(1:4), valign="middle", target=1) 
@@ -1914,7 +2058,7 @@ escEstSpp %>%
 
 ### Estimate decision:
 
-No pinks observed in 2024.
+PL+D wherever seen. 
 
 <br>
 
