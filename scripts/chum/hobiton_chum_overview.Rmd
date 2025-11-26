@@ -25,6 +25,7 @@ library(tidyverse)
 
 
 # Read data -------------------------
+# Load biosampling data
 nit.aab <- readxl::read_excel(path = list.files(path = "//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/CHINOOK/WCVI_TERMINAL_RUN/Annual_data_summaries_for_RunRecons/EPROcompile_base-files/1-Import-to-R",
                                                 pattern = "^All_Adult_Biosampling_114-NITINAT_AllStocks-AllSpecies_[0-9]{4}-[0-9]{4}_.*\\.xlsx$",
                                                 full.names = T), 
@@ -42,6 +43,17 @@ nit.aab <- readxl::read_excel(path = list.files(path = "//ENT.dfo-mpo.ca/DFO-MPO
                                   is.na(otolith_bag_no) ~ NA),
          scale_book_cell = case_when(!is.na(scale_book_no) ~ paste0(scale_book_no, sep="-", scale_sample_no, sep="-"),
                                      is.na(scale_book_no) ~ NA))
+
+
+# Load escapement data
+esc <- readxl::read_excel(path = list.files(path = here::here("outputs"),
+                                            pattern="R_OUT - Area21-22_Escapement_allSpp-allYrs",
+                                            full.names=T),
+                          sheet=1) %>%
+  janitor::clean_names() %>%
+  filter(waterbody_name=="HOBITON CREEK", species=="Chum") %>%
+  mutate(estimate = case_when(sen_presence_adult != "NOT INSPECTED" & is.na(estimate) ~ 0,
+                              TRUE ~ estimate))
 ```
 
 # Background
@@ -71,6 +83,29 @@ nit.aab %>%
   kableExtra::column_spec(1, width="3cm") %>%
   kableExtra::column_spec(c(2,3,4), width="4cm")  
 ```
+
+<br>
+
+# Recent escapements
+
+Hobiton Chum escapement tends to hover around 2000 fish, although timing surveys with environmental conditions is challenging (Fig \@ref(fig:hob-esc)). DFN and NTC have operated an echosounder in Hobiton since ~2023 and may have Chum counts not yet in NuSEDS. 
+
+```{r hob-esc, fig.cap='Recent Chum escapement to Hobiton Creek. Years without bars mean no data are in NuSEDS, but there may be data available from DFN/NTC echosounder counts not yet processed/provided. Data from NuSEDS, Nov 2024.'}
+
+ggplot() +
+  geom_bar(data = esc %>%
+             filter(est_type %in% c("Natural Adult Spawners")),
+           aes(x=year, y=estimate), stat="identity", fill="#26407d", colour="#26407d", alpha=0.8, linewidth=1) +
+  geom_bar(aes(x=2025, y=700), stat="identity", colour="red", fill="white", linetype="dashed", linewidth = 1) +
+  scale_x_continuous(breaks=seq(1950, 3000, by=1), limits=c(2000, 2026)) +
+  labs(y="Natural spawners") +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.title = element_text(face="bold"),
+        axis.text.x = element_text(angle=45, hjust=1),
+        axis.text = element_text(colour="black"))
+```
+
 
 <br>
 
