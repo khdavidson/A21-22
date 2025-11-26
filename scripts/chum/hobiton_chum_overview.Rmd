@@ -51,7 +51,6 @@ esc <- readxl::read_excel(path = list.files(path = here::here("outputs"),
                                             full.names=T),
                           sheet=1) %>%
   janitor::clean_names() %>%
-  filter(waterbody_name=="HOBITON CREEK", species=="Chum") %>%
   mutate(estimate = case_when(sen_presence_adult != "NOT INSPECTED" & is.na(estimate) ~ 0,
                               TRUE ~ estimate))
 ```
@@ -90,22 +89,23 @@ nit.aab %>%
 
 Hobiton Chum escapement tends to hover around 2000 fish, although timing surveys with environmental conditions is challenging (Fig \@ref(fig:hob-esc)). DFN and NTC have operated an echosounder in Hobiton since ~2023 and may have Chum counts not yet in NuSEDS. 
 
-```{r hob-esc, fig.cap='Recent Chum escapement to Hobiton Creek. Years without bars mean no data are in NuSEDS, but there may be data available from DFN/NTC echosounder counts not yet processed/provided. Data from NuSEDS, Nov 2024.'}
+```{r hob-esc, fig.cap='Recent Chum escapement to Hobiton Creek coloured by estimate method (an indicator of estimate quality). Value in red dashed indicates preliminary estimate not yet in NuSEDS. Years without bars mean no data are in NuSEDS, but there may be data available from DFN/NTC echosounder counts not yet processed/provided. Data from NuSEDS, Nov 2025.'}
 
 ggplot() +
   geom_bar(data = esc %>%
-             filter(est_type %in% c("Natural Adult Spawners")),
-           aes(x=year, y=estimate), stat="identity", fill="#26407d", colour="#26407d", alpha=0.8, linewidth=1) +
-  geom_bar(aes(x=2025, y=700), stat="identity", colour="red", fill="white", linetype="dashed", linewidth = 1) +
-  scale_x_continuous(breaks=seq(1950, 3000, by=1), limits=c(2000, 2026)) +
-  labs(y="Natural spawners") +
+             filter(est_type %in% c("Natural Adult Spawners"), waterbody_name=="HOBITON CREEK", species=="Chum",
+                    year>=2000),
+           aes(x=year, y=estimate, fill=estimate_method, colour=estimate_method), stat="identity", linewidth=1, alpha=0.8) +
+  geom_bar(aes(x=2025, y=700), stat="identity", colour="red", fill=alpha("#00b0f6", 0.4), linetype="dashed", linewidth = 1) +
+  scale_x_continuous(breaks=seq(1950, 3000, by=1)) +
+  labs(y="Natural spawners", fill="Estimate method", colour="Estimate method") +
   theme_bw() +
   theme(axis.title.x = element_blank(),
         axis.title = element_text(face="bold"),
         axis.text.x = element_text(angle=45, hjust=1),
-        axis.text = element_text(colour="black"))
+        axis.text = element_text(colour="black"),
+        legend.title = element_text(face="bold"))
 ```
-
 
 <br>
 
@@ -161,4 +161,48 @@ ggplot(data=mark_rate %>%
 # Age composition of Hobiton Chum
 
 Coming soon!
+
+<br>
+
+<br>
+
+# Appendix: Doobah & Caycuse
+
+There is interest in seeding Doobah Creek with Hobiton donor stock (beginning with Chum in particular). Doobah Creek escapements document in NuSEDS are provided in Figure \@ref(fig:doobah-esc) for comparison and reference.
+
+```{r doobah-esc, fig.cap='Doobah Creek escapement coloured by estimate method (an indicator of estimate quality). Doobah has not been surveyed by DFO in several years. Data from NuSEDS, Nov 2025.'}
+ggplot() +
+  geom_bar(data = esc %>%
+             filter(est_type %in% c("Natural Adult Spawners", "Unspecified Return"), waterbody_name=="DOOBAH CREEK"),
+           aes(x=year, y=estimate, fill=estimate_method, colour=estimate_method), stat="identity", alpha=0.8, linewidth=1) +
+  scale_x_continuous(breaks=seq(1940, 3000, by=5)) +
+  labs(y="Natural spawners", fill="Estimate method", colour="Estimate method") +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.title = element_text(face="bold"),
+        axis.text.x = element_text(angle=45, hjust=1),
+        axis.text = element_text(colour="black"),
+        legend.title = element_text(face="bold")) +
+  facet_wrap(~species, nrow=3, scales="free")
+```
+
+<br>
+
+```{r caycuse-esc, fig.cap='Caycuse River escapement coloured by estimate method (an indicator of estimate quality). Caycuse has not been surveyed by DFO in several years. Data from NuSEDS, Nov 2025.'}
+ggplot() +
+  geom_bar(data = esc %>%
+             filter(est_type %in% c("Natural Adult Spawners", "Unspecified Return"), waterbody_name=="CAYCUSE RIVER"),
+           aes(x=year, y=estimate, fill=estimate_method, colour=estimate_method), stat="identity", alpha=0.8, linewidth=1) +
+  scale_x_continuous(breaks=seq(1940, 3000, by=5)) +
+  labs(y="Natural spawners", fill="Estimate method", colour="Estimate method") +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.title = element_text(face="bold"),
+        axis.text.x = element_text(angle=45, hjust=1),
+        axis.text = element_text(colour="black"),
+        legend.title = element_text(face="bold")) +
+  facet_wrap(~species, nrow=3, scales="free")
+```
+
+
 
