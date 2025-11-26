@@ -1,0 +1,129 @@
+---
+title: "Hobiton Chum assessment review DRAFT"
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    toc_collapsed: false 
+    toc_depth: 5
+    number_sections: true
+date: "Last update: `r Sys.Date()`"
+---
+
+<br>
+
+*This document summarizes the current state of biodata available for Hobiton Chum. It is subject to change as more results are received, and data are QC'd.*  
+
+<br>
+
+```{r setup, include=FALSE, warning=F}
+knitr::opts_chunk$set(echo = F, warning=F, message=F)
+
+
+# Set up -------------------------
+library(tidyverse)
+
+
+# Read data -------------------------
+nit.aab <- readxl::read_excel(path = list.files(path = "//ENT.dfo-mpo.ca/DFO-MPO/GROUP/PAC/PBS/Operations/SCA/SCD_Stad/WCVI/CHINOOK/WCVI_TERMINAL_RUN/Annual_data_summaries_for_RunRecons/EPROcompile_base-files/1-Import-to-R",
+                                                pattern = "^All_Adult_Biosampling_114-NITINAT_AllStocks-AllSpecies_[0-9]{4}-[0-9]{4}_.*\\.xlsx$",
+                                                full.names = T), 
+                              sheet=1, guess_max=10000) %>% 
+  janitor::clean_names() %>% 
+  mutate(system_name = case_when(grepl("Hobiton", spawning_stock_name) ~ "Hobiton",
+                                 grepl("Nitinat", spawning_stock_name) ~ "Nitinat",
+                                 TRUE ~ "Other"),
+         oto_mark_bin = case_when(grepl("not marked|nomk|no mark|nm", otolith_hatch_code, ignore.case=T) ~ "Not marked",
+                                  grepl("no sample|destroyed|NS|None", otolith_hatch_code, ignore.case=T) ~ "Sample collected, processing issue",
+                                  is.na(otolith_hatch_code) & !is.na(otolith_vial_no) ~ "Sample collected, not analyzed",
+                                  grepl("H", otolith_hatch_code) ~ "Marked",
+                                  TRUE ~ "FLAG"),
+         oto_box_vial = case_when(!is.na(otolith_bag_no) ~ paste0(otolith_bag_no, sep="-", otolith_vial_no),
+                                  is.na(otolith_bag_no) ~ NA),
+         scale_book_cell = case_when(!is.na(scale_book_no) ~ paste0(scale_book_no, sep="-", scale_sample_no, sep="-"),
+                                     is.na(scale_book_no) ~ NA))
+```
+
+# Background
+
+Nitinat River Hatchery conducts a deadpitch program on Hobiton Creek for the purpose of collecting scale and otolith samples to assess age structure and hatchery contribution (respectively). In recent years, Stock Assessment has also been able to help with sample collection; otolith and scale samples are currently covered under StA's sample allocation (scales analyzed by the A'tlegay lab). Work is also conducted collaboratively with DFN and NTC, depending on crew schedules/availability. 
+
+The primary objective for sample collection is to assess the degree of straying from Nitinat Chum that may be occurring in Hobiton, followed by monitoring the age structure. In 2024, approximately 75 DNA samples were also collected as baseline samples for the Molecular Genetics Lab at PBS, with the hopes these samples may help refine the Chum GSI baseline. 
+
+Samples are primarily collected via gaff (or beach seine) from a few key locations with pools that accumulate carcasses: for example, the old fence site, the echosounder pool, and the creek mouth (among others). Ideally samples are collected throughout the creek and are representative of the return in time and space. 
+
+Table \@ref(tab:hob-samples) summarizes the biodata collections from Hobiton since 2010 for all types of samples. 
+
+```{r hob-samples}
+
+nit.aab %>% 
+  filter(species=="Chum", grepl("Hobiton", spawning_stock_name, ignore.case=T)) %>% 
+  group_by(spawning_year) %>% 
+  summarize(`Otoliths collected` = n_distinct(oto_box_vial, na.rm=T),
+            `Scales collected` = n_distinct(scale_book_cell, na.rm=T),
+            `DNA collected` = n_distinct(dna_sample_no, na.rm=T)) %>%
+  rename(`Spawning year` = spawning_year) %>%
+  add_row(`Spawning year`=2025, `Otoliths collected`=45, `Scales collected`=45, `DNA collected`=0) %>%
+  kableExtra::kbl(align="c", caption = "Sample sizes of tissues collected from Hobiton Chum since 2010. Years not listed were not sampled. Year in italics represents data not yet in EPRO database added manually.") %>%
+  kableExtra::kable_classic(full_width=F, html_font="Arial") %>%
+  kableExtra::row_spec(0, bold=T) %>%
+  kableExtra::row_spec(8, italic = T) %>%
+  kableExtra::column_spec(1, width="3cm") %>%
+  kableExtra::column_spec(c(2,3,4), width="4cm")  
+```
+
+<br>
+
+# Hatchery composition of Hobiton Chum 
+
+Hobiton Chum remain predominantly wild with little evidence of straying from Nitinat River enhanced stock, despite Nitinat Chum being approximately 50-75% hatchery-origin in a given year (Figure \@ref(fig:hob-comp)). Annual variation in Nitinat hatchery composition (and possibly subsequent straying into Hobiton) is likely linked to hatchery production. 
+
+<br>
+
+```{r include=F}
+mark_rate <- nit.aab %>% 
+  filter(species=="Chum", grepl("Nitinat|Hobiton", spawning_stock_name, ignore.case=T), system_name!="Other", !is.na(otolith_vial_no)) %>%
+  group_by(spawning_year, system_name, oto_mark_bin) %>% 
+  summarize(n_system_samples=n()) %>%
+  group_by(spawning_year, system_name) %>%
+  mutate(total_system_samples = sum(n_system_samples),
+         propn_by_bin = n_system_samples/total_system_samples)
+```
+
+```{r hob-comp, fig.cap='Hatchery composition of Hobiton Chum compared to Nitinat Chum for years with collections in both locations. Note that 2025 had a modest sample collection (n=45) but data are not in EPRO at the time this was produced. Samples collected but not analyzed are awaiting analysis at either the Uchucklesaht otolith lab or have been sent to the DFO Yukon otolith lab. Sample sizes for each system are given above each bar.'}
+
+ggplot(data=mark_rate %>%
+         filter(spawning_year %in% c(2016:2017, 2019,2020,2022,2024,2025))) +
+  geom_bar(aes(x=system_name, y=propn_by_bin, fill=oto_mark_bin, colour=oto_mark_bin), stat="identity", position="stack", alpha=0.8) +
+  geom_label(aes(x=system_name, y=1.1, label=total_system_samples), size=3) +
+  facet_wrap(~spawning_year, scales="free") +
+  scale_fill_manual(values=c("Marked" = "orange",
+                             "Not marked" = "dodger blue",
+                             "Sample collected, processing issue" = "gray80",
+                             "Sample collected, not analyzed" = "red")) +
+  scale_colour_manual(values=c("Marked" = "orange",
+                             "Not marked" = "dodger blue",
+                             "Sample collected, processing issue" = "gray80",
+                             "Sample collected, not analyzed" = "red")) +
+  scale_y_continuous(labels = scales::percent_format(), limits=c(0, 1.2), breaks=seq(0,1, by=0.25)) +
+  labs(y="Proportion of otolith samples analyzed", fill = "Otolith mark status:  ", colour="Otolith mark status:  ") +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.title = element_text(face="bold", size=13),
+        axis.text = element_text(size=11, colour="black"),
+        legend.title = element_text(face="bold", size=9),
+        legend.text = element_text(size=9),
+        legend.position = "bottom",
+        legend.background = element_rect(fill=alpha("white", 0.7), colour="black"),
+        legend.key.spacing = unit(0.5, "mm"),
+        strip.text = element_text(size=14)) +
+  guides(fill = guide_legend(ncol = 2),
+         colour = guide_legend(ncol = 2))
+```
+
+<br>
+
+# Age composition of Hobiton Chum
+
+Coming soon!
+
